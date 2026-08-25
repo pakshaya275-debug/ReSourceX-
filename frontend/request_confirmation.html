@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ReSourceX | Request Status</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+
+        <div class="nav-brand">
+            ↻ ReSource<span>X</span>
+        </div>
+
+        <div class="nav-title">
+            Request Status
+        </div>
+
+        <a href="recipient_dashboard.html" class="logout-btn">
+            Back
+        </a>
+
+    </div>
+
+
+    <!-- CONFIRMATION -->
+
+    <main class="confirmation-page">
+
+        <div class="confirmation-card">
+
+            <div class="confirmation-icon">
+                📦
+            </div>
+
+            <h1>Request Resource</h1>
+
+            <p>
+                Please review the resource before submitting your request.
+            </p>
+
+
+            <!-- SELECTED RESOURCE -->
+
+            <div class="confirmation-resource">
+
+                <h2 id="confirmResourceName">
+                    Resource
+                </h2>
+
+                <p>
+                    Category:
+                    <strong id="confirmCategory">-</strong>
+                </p>
+
+                <p>
+                    Quantity:
+                    <strong id="confirmQuantity">-</strong>
+                </p>
+
+                <p>
+                    Location:
+                    <strong id="confirmLocation">-</strong>
+                </p>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="confirmation-actions">
+
+                <a
+                    href="recipient_dashboard.html"
+                    class="secondary-btn">
+
+                    Cancel
+
+                </a>
+
+                <button
+                    id="confirmRequestBtn"
+                    class="primary-btn">
+
+                    Confirm Request
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

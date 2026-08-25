@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard | ReSourceX</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar admin-sidebar">
+
+            <div class="sidebar-logo">
+                <span>↻</span>
+                ReSource<span>X</span>
+                <span class="admin-badge">Admin</span>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <a href="admin_dashboard.html" class="nav-item active">
+                    🏠
+                    <span>Overview</span>
+                </a>
+
+                <a href="#usersSection" class="nav-item">
+                    👥
+                    <span>User Management</span>
+                </a>
+
+                <a href="#resourcesSection" class="nav-item">
+                    📦
+                    <span>All Resources</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <a href="#" class="nav-item">
+                    ⚙️
+                    <span>Settings</span>
+                </a>
+
+                <a href="index.html" class="nav-item logout">
+                    🚪
+                    <span>Logout</span>
+                </a>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- TOP HEADER -->
+            <header class="dashboard-header">
+
+                <div>
+                    <h1>System Administration</h1>
+                    <p>Monitor network participants, resources, and exchange operations.</p>
+                </div>
+
+                <div class="header-actions">
+
+                    <div class="system-status">
+                        <span class="status-dot"></span>
+                        <span>System Operational</span>
+                    </div>
+
+                    <button class="notification-btn" title="Notifications">
+                        🔔
+                    </button>
+
+                    <div class="profile">
+                        <div class="profile-avatar" style="background: #eadef7; color: #5d259e;">
+                            A
+                        </div>
+
+                        <div class="profile-info">
+                            <strong>Administrator</strong>
+                            <span>System Control</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <!-- WELCOME / OVERVIEW BANNER -->
+            <section class="welcome-section">
+
+                <div>
+                    <h2>Welcome to Admin Central 🛡️</h2>
+
+                    <p>
+                        Comprehensive management for surplus resource routing, user verification, and platform integrity.
+                    </p>
+                </div>
+
+                <a href="add_resource.html" class="primary-btn">
+                    ➕ Add Resource
+                </a>
+
+            </section>
+
+
+            <!-- SYSTEM STATISTICS -->
+            <section class="stats-grid">
+
+                <div class="stat-card">
+
+                    <div class="stat-icon" style="background: #e8f4fd; color: #1a6da9;">
+                        👥
+                    </div>
+
+                    <div>
+                        <p>Total Registered Users</p>
+                        <h3 id="adminTotalUsers">0</h3>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        📦
+                    </div>
+
+                    <div>
+                        <p>Total Resources</p>
+                        <h3 id="adminTotalResources">0</h3>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🔔
+                    </div>
+
+                    <div>
+                        <p>Active Requests</p>
+                        <h3 id="adminTotalRequests">0</h3>
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        🤝
+                    </div>
+
+                    <div>
+                        <p>Completed Allocations</p>
+                        <h3 id="adminTotalAllocated">0</h3>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- USER MANAGEMENT TABLE -->
+            <section class="dashboard-section" id="usersSection">
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>User Management</h2>
+
+                        <p>
+                            All registered donors, recipients, and administrators.
+                        </p>
+                    </div>
+
+                    <span id="adminUserCount" class="view-all">
+                        0 Users
+                    </span>
+
+                </div>
+
+
+                <div class="resource-table-container">
+
+                    <table class="resource-table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Account Role</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="adminUsersTableBody">
+                            <!-- Dynamic user rows generated via script.js -->
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- RESOURCE MODERATION TABLE -->
+            <section class="dashboard-section" id="resourcesSection">
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>Resource Moderation & Inventory</h2>
+
+                        <p>
+                            All listed surplus resources across categories and locations.
+                        </p>
+                    </div>
+
+                    <a href="add_resource.html" class="view-all">
+                        ➕ New Resource
+                    </a>
+
+                </div>
+
+
+                <div class="resource-table-container">
+
+                    <table class="resource-table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Resource</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="adminResourcesTableBody">
+                            <!-- Dynamic resource rows generated via script.js -->
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- RESOURCE DETAILS MODAL -->
+    <div id="resourceModal" class="resource-modal">
+
+        <div class="resource-modal-content">
+
+            <button
+                class="modal-close"
+                onclick="closeResourceModal()">
+                ×
+            </button>
+
+            <div class="modal-icon">
+                📦
+            </div>
+
+            <h2 id="modalResourceName">
+                Resource Name
+            </h2>
+
+            <p class="modal-subtitle">
+                Resource specifications and availability
+            </p>
+
+
+            <div class="resource-details">
+
+                <div class="detail-item">
+                    <span>Resource Type</span>
+                    <strong id="modalResourceType">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Quantity</span>
+                    <strong id="modalResourceQuantity">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Status</span>
+                    <strong id="modalResourceStatus">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Location</span>
+                    <strong id="modalResourceLocation">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Available Until</span>
+                    <strong id="modalResourceAvailability">-</strong>
+                </div>
+
+            </div>
+
+
+            <div class="modal-description">
+
+                <h3>Description</h3>
+
+                <p id="modalResourceDescription">
+                    -
+                </p>
+
+            </div>
+
+
+            <div class="modal-description">
+
+                <h3>Specifications</h3>
+
+                <p id="modalResourceSpecifications">
+                    -
+                </p>
+
+            </div>
+
+
+            <button
+                class="modal-action"
+                onclick="closeResourceModal()">
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

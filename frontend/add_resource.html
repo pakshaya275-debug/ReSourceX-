@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Add Resource | ReSourceX</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+            <span>↻</span>
+            ReSource<span>X</span>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a href="donor_dashboard.html#overviewSection" class="nav-item">
+                🏠
+                <span>Dashboard</span>
+            </a>
+
+            <a href="add_resource.html" class="nav-item active">
+                ➕
+                <span>Add Resource</span>
+            </a>
+
+            <a href="donor_dashboard.html#myResourcesSection" class="nav-item">
+                📦
+                <span>My Resources</span>
+            </a>
+
+            <a href="donor_dashboard.html#requestsSection" class="nav-item">
+                🔔
+                <span>Requests</span>
+            </a>
+
+            <a href="donor_dashboard.html#activitySection" class="nav-item">
+                📊
+                <span>Activity</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <a href="#" class="nav-item">
+                ⚙️
+                <span>Settings</span>
+            </a>
+
+            <a href="index.html" class="nav-item logout">
+                🚪
+                <span>Logout</span>
+            </a>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="main-content">
+
+        <header class="dashboard-header">
+
+            <div>
+
+                <h1>Add Resource</h1>
+
+                <p>
+                    Share a surplus resource with the ReSourceX network.
+                </p>
+
+            </div>
+
+        </header>
+
+
+        <!-- FORM SECTION -->
+
+        <section class="dashboard-section add-resource-section">
+
+            <div class="section-header">
+
+                <div>
+
+                    <h2>Resource Information</h2>
+
+                    <p>
+                        Provide accurate details to help recipients find
+                        suitable resources.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form id="resourceForm">
+
+
+                <!-- BASIC INFORMATION -->
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="resourceName">
+                            Resource Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="resourceName"
+                            placeholder="e.g. Dell Laptop"
+                            required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="resourceCategory">
+                            Category
+                        </label>
+
+                        <select id="resourceCategory" required>
+
+                            <option value="">
+                                Select category
+                            </option>
+
+                            <option value="Food">
+                                Food
+                            </option>
+
+                            <option value="Electronics">
+                                Electronics
+                            </option>
+
+                            <option value="Clothing">
+                                Clothing
+                            </option>
+
+                            <option value="Essentials">
+                                Essentials
+                            </option>
+
+                            <option value="Furniture">
+                                Furniture
+                            </option>
+
+                            <option value="Books">
+                                Books
+                            </option>
+
+                            <option value="Other">
+                                Other
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUANTITY + CONDITION -->
+
+                <div class="form-row">
+
+                    <div class="form-group">
+
+                        <label for="resourceQuantity">
+                            Quantity
+                        </label>
+
+                        <input
+                            type="number"
+                            id="resourceQuantity"
+                            min="1"
+                            placeholder="e.g. 5"
+                            required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="resourceCondition">
+                            Condition
+                        </label>
+
+                        <select id="resourceCondition" required>
+
+                            <option value="">
+                                Select condition
+                            </option>
+
+                            <option value="New">
+                                New
+                            </option>
+
+                            <option value="Good">
+                                Good
+                            </option>
+
+                            <option value="Used">
+                                Used
+                            </option>
+
+                            <option value="Needs Repair">
+                                Needs Repair
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- LOCATION -->
+
+                <div class="form-group">
+
+                    <label for="resourceLocation">
+                        Pickup Location
+                    </label>
+
+                    <input
+                        type="text"
+                        id="resourceLocation"
+                        placeholder="e.g. Vellore"
+                        required>
+
+                </div>
+
+
+                <!-- AVAILABILITY -->
+
+                <div class="form-group">
+
+                    <label for="resourceAvailability">
+                        Available Until
+                    </label>
+
+                    <input
+                        type="date"
+                        id="resourceAvailability"
+                        required>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="form-group">
+
+                    <label for="resourceDescription">
+                        Description
+                    </label>
+
+                    <textarea
+                        id="resourceDescription"
+                        rows="4"
+                        placeholder="Describe the resource and how it can be used."
+                        required></textarea>
+
+                </div>
+
+
+                <!-- SPECIFICATIONS -->
+
+                <div class="form-group">
+
+                    <label for="resourceSpecifications">
+                        Specifications
+                    </label>
+
+                    <textarea
+                        id="resourceSpecifications"
+                        rows="4"
+                        placeholder="Enter important specifications, size, model, features, etc."></textarea>
+
+                </div>
+
+
+                <!-- BUTTONS -->
+
+                <div class="form-actions">
+
+                    <a
+                        href="donor_dashboard.html"
+                        class="secondary-btn">
+                        Cancel
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="primary-btn">
+                        ➕ Add Resource
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>

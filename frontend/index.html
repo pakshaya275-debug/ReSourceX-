@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ReSourceX | Resource Exchange Network</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="auth-page">
+
+        <!-- LEFT BRANDING SECTION -->
+        <section class="brand-panel">
+
+            <div class="brand-content">
+
+                <div class="logo">
+                    <span class="logo-icon">↻</span>
+                    <span>ReSource<span class="logo-x">X</span></span>
+                </div>
+
+                <h1>
+                    Give resources<br>
+                    <span>another life.</span>
+                </h1>
+
+                <p class="brand-description">
+                    An intelligent surplus resource exchange network
+                    connecting available resources with people and
+                    organizations who need them.
+                </p>
+
+                <div class="feature-list">
+
+                    <div class="feature">
+                        <div class="feature-icon">♻</div>
+                        <div>
+                            <strong>Reduce Waste</strong>
+                            <p>Put surplus resources to meaningful use.</p>
+                        </div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">🤝</div>
+                        <div>
+                            <strong>Connect Communities</strong>
+                            <p>Connect donors with verified recipients.</p>
+                        </div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">📦</div>
+                        <div>
+                            <strong>Smart Allocation</strong>
+                            <p>Find suitable resources based on need.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="brand-footer">
+                    Building a more sustainable resource cycle.
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- RIGHT AUTH SECTION -->
+        <section class="auth-panel">
+
+            <div class="auth-card">
+
+                <!-- TABS -->
+
+                <div class="auth-tabs">
+
+                    <button
+                        class="auth-tab active"
+                        id="signInTab"
+                        type="button">
+                        Sign In
+                    </button>
+
+                    <button
+                        class="auth-tab"
+                        id="registerTab"
+                        type="button">
+                        Create Account
+                    </button>
+
+                </div>
+
+
+                <!-- SIGN IN -->
+
+                <div id="signInFormContainer">
+
+                    <div class="auth-heading">
+                        <h2>Welcome back</h2>
+                        <p>Sign in to continue to ReSourceX.</p>
+                    </div>
+
+                    <form id="loginForm">
+
+                        <div class="form-group">
+
+                            <label for="loginEmail">
+                                Email Address
+                            </label>
+
+                            <input
+                                type="email"
+                                id="loginEmail"
+                                placeholder="you@example.com"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="loginPassword">
+                                Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="loginPassword"
+                                placeholder="Enter your password"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="roleSelect">
+                                Continue as
+                            </label>
+
+                            <select id="roleSelect" required>
+
+                                <option value="">
+                                    Select your role
+                                </option>
+
+                                <option value="donor">
+                                    Donor
+                                </option>
+
+                                <option value="recipient">
+                                    Recipient
+                                </option>
+
+                                <option value="admin">
+                                    Administrator
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-options">
+
+                            <label class="checkbox-label">
+
+                                <input type="checkbox">
+
+                                Remember me
+
+                            </label>
+
+                            <a href="#" id="forgotPasswordLink">
+                                Forgot password?
+                            </a>
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="auth-button">
+
+                            Sign In
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+
+                <!-- REGISTER -->
+
+                <div
+                    id="registerFormContainer"
+                    class="hidden">
+
+                    <div class="auth-heading">
+
+                        <h2>Create your account</h2>
+
+                        <p>
+                            Join the ReSourceX resource network.
+                        </p>
+
+                    </div>
+
+
+                    <form id="registerForm">
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label for="registerFirstName">
+                                    First Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="registerFirstName"
+                                    placeholder="First name"
+                                    required>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="registerLastName">
+                                    Last Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="registerLastName"
+                                    placeholder="Last name"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="registerEmail">
+                                Email Address
+                            </label>
+
+                            <input
+                                type="email"
+                                id="registerEmail"
+                                placeholder="you@example.com"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="registerPassword">
+                                Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="registerPassword"
+                                placeholder="Create a password"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="registerRole">
+                                Account Type
+                            </label>
+
+                            <select id="registerRole" required>
+
+                                <option value="">
+                                    Select account type
+                                </option>
+
+                                <option value="donor">
+                                    Donor
+                                </option>
+
+                                <option value="recipient">
+                                    Recipient
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <label class="terms">
+
+                            <input
+                                type="checkbox"
+                                required>
+
+                            I agree to the terms and conditions.
+
+                        </label>
+
+
+                        <button
+                            type="submit"
+                            class="auth-button">
+
+                            Create Account
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+
+                <!-- FORGOT PASSWORD -->
+
+                <div
+                    id="forgotPasswordContainer"
+                    class="hidden">
+
+                    <div class="auth-heading">
+
+                        <h2>Reset Password</h2>
+
+                        <p>
+                            Enter your registered email and choose a new password.
+                        </p>
+
+                    </div>
+
+                    <form id="forgotPasswordForm">
+
+                        <div class="form-group">
+
+                            <label for="resetEmail">
+                                Registered Email Address
+                            </label>
+
+                            <input
+                                type="email"
+                                id="resetEmail"
+                                placeholder="you@example.com"
+                                required>
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="resetNewPassword">
+                                New Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="resetNewPassword"
+                                placeholder="Enter new password"
+                                required>
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="resetConfirmPassword">
+                                Confirm New Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="resetConfirmPassword"
+                                placeholder="Re-enter new password"
+                                required>
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="auth-button">
+                            Reset Password
+                        </button>
+
+                        <div class="form-options" style="justify-content: center; margin-top: 20px;">
+                            <a href="#" id="backToSignInLink" style="font-weight: 600;">
+                                ← Back to Sign In
+                            </a>
+                        </div>
+
+                    </form>
+
+                </div>
+
+
+                <p class="demo-text">
+                    ReSourceX Demo • Authentication will be connected
+                    to the backend.
+                </p>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

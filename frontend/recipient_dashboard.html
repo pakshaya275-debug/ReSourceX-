@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Recipient Dashboard | ReSourceX</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="sidebar-logo">
+                <span>↻</span>
+                ReSource<span>X</span>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <a href="#findResourcesSection" class="nav-item active" id="recipientNavFind">
+                    🔍
+                    <span>Find Resources</span>
+                </a>
+
+                <a href="#myRequestsSection" class="nav-item" id="recipientNavRequests">
+                    📋
+                    <span>My Requests</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <a href="#" class="nav-item">
+                    ⚙️
+                    <span>Settings</span>
+                </a>
+
+                <a href="index.html" class="nav-item logout">
+                    🚪
+                    <span>Logout</span>
+                </a>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- TOP HEADER -->
+            <header class="dashboard-header" id="findResourcesSection">
+
+                <div>
+                    <h1>Find Resources</h1>
+                    <p>Discover available surplus resources that match your community needs.</p>
+                </div>
+
+                <div class="header-actions">
+
+                    <button class="notification-btn" title="Notifications">
+                        🔔
+                    </button>
+
+                    <div class="profile">
+                        <div class="profile-avatar" style="background: #e8f4fd; color: #1a6da9;">
+                            R
+                        </div>
+
+                        <div class="profile-info">
+                            <strong>Recipient</strong>
+                            <span>Community Member</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <!-- SEARCH + FILTER -->
+            <section class="search-panel">
+
+                <div class="search-box">
+
+                    <label for="resourceSearch">
+                        Search Resources
+                    </label>
+
+                    <input
+                        type="text"
+                        id="resourceSearch"
+                        placeholder="Search by resource name, description, or location..."
+                    >
+
+                </div>
+
+
+                <div class="filter-box">
+
+                    <label for="categoryFilter">
+                        Category
+                    </label>
+
+                    <select id="categoryFilter">
+
+                        <option value="all">
+                            All Categories
+                        </option>
+
+                        <option value="food">
+                            Food
+                        </option>
+
+                        <option value="clothing">
+                            Clothing
+                        </option>
+
+                        <option value="electronics">
+                            Electronics
+                        </option>
+
+                        <option value="furniture">
+                            Furniture
+                        </option>
+
+                        <option value="books">
+                            Books
+                        </option>
+
+                        <option value="essentials">
+                            Essentials
+                        </option>
+
+                        <option value="other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </section>
+
+
+            <!-- RESOURCE LIST -->
+            <section class="resources-section">
+
+                <div class="section-heading">
+
+                    <h2>Available Resources</h2>
+
+                    <span id="resourceCount">
+                        0 resources
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="resourceList"
+                    class="resource-grid">
+                </div>
+
+
+                <!-- EMPTY STATE -->
+                <div
+                    id="emptyState"
+                    class="empty-state">
+
+                    <div class="empty-icon">
+                        📦
+                    </div>
+
+                    <h3>No resources found</h3>
+
+                    <p>
+                        Try changing your search or category filter.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- MY REQUESTS SECTION -->
+            <section class="dashboard-section" id="myRequestsSection" style="margin-top: 40px;">
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>📋 My Submitted Requests</h2>
+                        <p>Track the approval and allocation status of resources you have requested.</p>
+                    </div>
+
+                    <span class="counter-badge" id="recipientRequestCount">
+                        0 Requests
+                    </span>
+
+                </div>
+
+
+                <div class="resource-table-container">
+
+                    <table class="resource-table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Resource Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="recipientRequestsTableBody">
+                            <!-- Populated dynamically via script.js -->
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

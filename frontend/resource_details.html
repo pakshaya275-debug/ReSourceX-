@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ReSourceX | Resource Details</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="navbar">
+
+        <div class="nav-brand">
+            ↻ ReSource<span>X</span>
+        </div>
+
+        <div class="nav-title">
+            Resource Details
+        </div>
+
+        <a href="recipient_dashboard.html" class="logout-btn">
+            Back
+        </a>
+
+    </div>
+
+
+    <main class="resource-details-page">
+
+        <div class="details-card">
+
+            <div class="details-header">
+
+                <div class="details-icon">
+                    📦
+                </div>
+
+                <div>
+                    <span id="resourceCategory"></span>
+
+                    <h1 id="resourceName">
+                        Resource
+                    </h1>
+                </div>
+
+            </div>
+
+
+            <div class="details-grid">
+
+                <div class="detail-item">
+                    <span>Quantity</span>
+                    <strong id="resourceQuantity">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Condition</span>
+                    <strong id="resourceCondition">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Pickup Location</span>
+                    <strong id="resourceLocation">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Available Until</span>
+                    <strong id="resourceAvailability">-</strong>
+                </div>
+
+            </div>
+
+
+            <div class="detail-section">
+
+                <h3>Description</h3>
+
+                <p id="resourceDescription">
+                    No description provided.
+                </p>
+
+            </div>
+
+
+            <div class="detail-section">
+
+                <h3>Specifications</h3>
+
+                <p id="resourceSpecifications">
+                    No specifications provided.
+                </p>
+
+            </div>
+
+
+            <div class="details-actions">
+
+                <a
+                    href="recipient_dashboard.html"
+                    class="secondary-btn">
+                    Back to Resources
+                </a>
+
+                <button
+                    id="requestResourceBtn"
+                    class="primary-btn">
+                    Request Resource
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

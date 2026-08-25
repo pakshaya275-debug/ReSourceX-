@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Donor Dashboard | ReSourceX</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="sidebar-logo">
+                <span>↻</span>
+                ReSource<span>X</span>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <a href="#overviewSection" class="nav-item active" id="donorNavDashboard">
+                    🏠
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="add_resource.html" class="nav-item">
+                    ➕
+                    <span>Add Resource</span>
+                </a>
+
+                <a href="#myResourcesSection" class="nav-item" id="donorNavResources">
+                    📦
+                    <span>My Resources</span>
+                </a>
+
+                <a href="#requestsSection" class="nav-item" id="donorNavRequests">
+                    🔔
+                    <span>Requests</span>
+                </a>
+
+                <a href="#activitySection" class="nav-item" id="donorNavActivity">
+                    📊
+                    <span>Activity</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <a href="#" class="nav-item">
+                    ⚙️
+                    <span>Settings</span>
+                </a>
+
+                <a href="index.html" class="nav-item logout">
+                    🚪
+                    <span>Logout</span>
+                </a>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- OVERVIEW / TOP HEADER -->
+            <div id="overviewSection">
+
+                <header class="dashboard-header">
+
+                    <div>
+                        <h1>Donor Dashboard</h1>
+                        <p>Manage and track your surplus resources, requests, and allocations.</p>
+                    </div>
+
+                    <div class="header-actions">
+
+                        <button class="notification-btn" title="Notifications">
+                            🔔
+                        </button>
+
+                        <div class="profile">
+                            <div class="profile-avatar">
+                                D
+                            </div>
+
+                            <div class="profile-info">
+                                <strong>Donor</strong>
+                                <span>Resource Provider</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </header>
+
+
+                <!-- WELCOME -->
+                <section class="welcome-section">
+
+                    <div>
+                        <h2>Welcome back, Donor 👋</h2>
+
+                        <p>
+                            Thank you for helping give surplus resources another life.
+                        </p>
+                    </div>
+
+                    <a href="add_resource.html" class="primary-btn">
+                        ➕ Add Resource
+                    </a>
+
+                </section>
+
+
+                <!-- STATISTICS -->
+                <section class="stats-grid">
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            📦
+                        </div>
+
+                        <div>
+                            <p>Total Resources</p>
+                            <h3 id="donorTotalCount">0</h3>
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            ♻️
+                        </div>
+
+                        <div>
+                            <p>Available</p>
+                            <h3 id="donorAvailableCount">0</h3>
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            🔔
+                        </div>
+
+                        <div>
+                            <p>Requested</p>
+                            <h3 id="donorRequestedCount">0</h3>
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-icon">
+                            🤝
+                        </div>
+
+                        <div>
+                            <p>Allocated</p>
+                            <h3 id="donorAllocatedCount">0</h3>
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- MODULE 1: MY RESOURCES -->
+            <section class="dashboard-section" id="myResourcesSection">
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>📦 My Resources</h2>
+
+                        <p>
+                            Manage your full inventory of surplus items.
+                        </p>
+                    </div>
+
+                    <div class="filter-pills" id="myResourcesFilterPills">
+                        <button type="button" class="filter-pill active" onclick="filterDonorResources('all')">All</button>
+                        <button type="button" class="filter-pill" onclick="filterDonorResources('available')">Available</button>
+                        <button type="button" class="filter-pill" onclick="filterDonorResources('requested')">Requested</button>
+                        <button type="button" class="filter-pill" onclick="filterDonorResources('allocated')">Allocated</button>
+                    </div>
+
+                </div>
+
+
+                <div class="resource-table-container">
+
+                    <table class="resource-table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Resource</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="donorResourceTableBody">
+                            <!-- Dynamic rows will be rendered by script.js -->
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- MODULE 2: INCOMING REQUESTS -->
+            <section class="dashboard-section" id="requestsSection">
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>🔔 Incoming Requests</h2>
+
+                        <p>
+                            Review and respond to recipient requests for your resources.
+                        </p>
+                    </div>
+
+                    <span class="counter-badge pending" id="donorPendingRequestsBadge">
+                        0 Pending
+                    </span>
+
+                </div>
+
+
+                <div class="resource-table-container">
+
+                    <table class="resource-table">
+
+                        <thead>
+
+                            <tr>
+                                <th>Requested Item</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Location</th>
+                                <th>Request Status</th>
+                                <th>Donor Decision</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="donorRequestsTableBody">
+                            <!-- Dynamic requests rendered by script.js -->
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- MODULE 3: RECENT ACTIVITY -->
+            <section class="dashboard-section" id="activitySection">
+
+                <div class="section-header">
+
+                    <div>
+                        <h2>📊 Activity Log</h2>
+
+                        <p>
+                            Audit trail of all your resource creations, requests, and completed allocations.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="activity-list" id="donorActivityList">
+                    <!-- Dynamic activity will be rendered by script.js -->
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- RESOURCE DETAILS MODAL -->
+    <div id="resourceModal" class="resource-modal">
+
+        <div class="resource-modal-content">
+
+            <button
+                class="modal-close"
+                onclick="closeResourceModal()">
+                ×
+            </button>
+
+            <div class="modal-icon">
+                📦
+            </div>
+
+            <h2 id="modalResourceName">
+                Resource Name
+            </h2>
+
+            <p class="modal-subtitle">
+                Resource specifications and availability
+            </p>
+
+
+            <div class="resource-details">
+
+                <div class="detail-item">
+                    <span>Resource Type</span>
+                    <strong id="modalResourceType">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Quantity</span>
+                    <strong id="modalResourceQuantity">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Status</span>
+                    <strong id="modalResourceStatus">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Location</span>
+                    <strong id="modalResourceLocation">-</strong>
+                </div>
+
+                <div class="detail-item">
+                    <span>Available Until</span>
+                    <strong id="modalResourceAvailability">-</strong>
+                </div>
+
+            </div>
+
+
+            <div class="modal-description">
+
+                <h3>Description</h3>
+
+                <p id="modalResourceDescription">
+                    -
+                </p>
+
+            </div>
+
+
+            <div class="modal-description">
+
+                <h3>Specifications</h3>
+
+                <p id="modalResourceSpecifications">
+                    -
+                </p>
+
+            </div>
+
+
+            <button
+                class="modal-action"
+                onclick="closeResourceModal()">
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
