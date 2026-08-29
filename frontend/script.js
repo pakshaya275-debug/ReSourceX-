@@ -28,6 +28,48 @@ function escapeHtml(str) {
         .replace(/'/g, "&#039;");
 }
 
+/* ==========================================================================
+   BACKEND API CLIENT (authentication migration — resources remain local for now)
+   ========================================================================== */
+const API_BASE_URL = window.RESOURCEX_API_URL || "http://localhost:5000/api";
+const AUTH_TOKEN_KEY = "resourceXAuthToken";
+const CURRENT_USER_KEY = "resourceXCurrentUser";
+
+function getAuthToken() {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+function saveAuthSession(payload) {
+    if (payload?.token) localStorage.setItem(AUTH_TOKEN_KEY, payload.token);
+    if (payload?.user) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(payload.user));
+}
+
+function getCurrentUser() {
+    try { return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || "null"); }
+    catch (error) { return null; }
+}
+
+function clearAuthSession() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(CURRENT_USER_KEY);
+}
+
+async function apiRequest(path, options = {}) {
+    const headers = Object.assign({}, options.headers || {});
+    const token = getAuthToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const requestOptions = Object.assign({}, options, { headers });
+    if (options.body && typeof options.body !== "string") {
+        headers["Content-Type"] = "application/json";
+        requestOptions.body = JSON.stringify(options.body);
+    }
+    const response = await fetch(API_BASE_URL + path, requestOptions);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+    return data;
+}
+
+window.resourceXApi = { apiRequest, getAuthToken, getCurrentUser, clearAuthSession };
 /**
  * Retrieves resources from localStorage without auto-seeding fake data.
  */
@@ -129,73 +171,67 @@ function initAuth() {
         signInTab?.classList.add("active");
     });
 
-    // Login Form Submit
-    document.getElementById("loginForm")?.addEventListener("submit", function (e) {
+    // Login Form Submit — now backed by the Express API
+    document.getElementById("loginForm")?.addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const email = document.getElementById("loginEmail")?.value.trim().toLowerCase();
         const password = document.getElementById("loginPassword")?.value;
-        const role = document.getElementById("roleSelect")?.value;
+        const selectedRole = document.getElementById("roleSelect")?.value;
 
-        const accounts = getAccounts();
-        const account = accounts.find(
-            user => user.email.toLowerCase() === email &&
-                    user.password === password &&
-                    user.role === role
-        );
-
-        if (!account) {
-            alert("❌ Invalid email, password, or role. Please verify your details or register a new account.");
+        if (!email || !password || !selectedRole) {
+            alert("Please enter your email, password, and role.");
             return;
         }
 
-        alert(`Welcome back, ${account.firstName}!`);
-
-        if (role === "donor") {
-            window.location.href = "donor_dashboard.html";
-        } else if (role === "recipient") {
-            window.location.href = "recipient_dashboard.html";
-        } else if (role === "admin") {
-            window.location.href = "admin_dashboard.html";
+        try {
+            const data = await apiRequest("/auth/login", {
+                method: "POST",
+                body: { email, password, role: selectedRole }
+            });
+            saveAuthSession(data);
+            const destinationRole = (data.user?.role || selectedRole).toLowerCase();
+            alert(`Welcome back, ${data.user?.firstName || "there"}!`);
+            if (destinationRole === "donor") window.location.href = "donor_dashboard.html";
+            else if (destinationRole === "recipient") window.location.href = "recipient_dashboard.html";
+            else if (destinationRole === "admin") window.location.href = "admin_dashboard.html";
+        } catch (error) {
+            console.error("Login failed", error);
+            alert("❌ " + error.message);
         }
     });
 
-    // Registration Form Submit
-    document.getElementById("registerForm")?.addEventListener("submit", function (e) {
+    // Registration Form Submit — now backed by the Express API
+    document.getElementById("registerForm")?.addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const firstName = document.getElementById("registerFirstName")?.value.trim();
         const lastName = document.getElementById("registerLastName")?.value.trim();
         const email = document.getElementById("registerEmail")?.value.trim().toLowerCase();
         const password = document.getElementById("registerPassword")?.value;
-        const role = document.getElementById("registerRole")?.value;
+        const selectedRole = document.getElementById("registerRole")?.value;
 
-        if (!firstName || !lastName || !email || !password || !role) {
+        if (!firstName || !lastName || !email || !password || !selectedRole) {
             alert("Please fill in all required fields.");
             return;
         }
 
-        const accounts = getAccounts();
-        const exists = accounts.some(u => u.email.toLowerCase() === email);
-
-        if (exists) {
-            alert("An account with this email address already exists. Please sign in instead.");
-            return;
+        try {
+            await apiRequest("/auth/register", {
+                method: "POST",
+                body: { firstName, lastName, email, password, role: selectedRole }
+            });
+            alert("🎉 Account created successfully! Please sign in.");
+            document.getElementById("registerForm").reset();
+            registerContainer?.classList.add("hidden");
+            signInContainer?.classList.remove("hidden");
+            registerTab?.classList.remove("active");
+            signInTab?.classList.add("active");
+        } catch (error) {
+            console.error("Registration failed", error);
+            alert("❌ " + error.message);
         }
-
-        accounts.push({ firstName, lastName, email, password, role });
-        saveAccounts(accounts);
-
-        alert("🎉 Account created successfully! Please sign in.");
-        document.getElementById("registerForm").reset();
-
-        // Switch to Sign In Tab
-        registerContainer?.classList.add("hidden");
-        signInContainer?.classList.remove("hidden");
-        registerTab?.classList.remove("active");
-        signInTab?.classList.add("active");
     });
-
     // Forgot Password Form Submit
     document.getElementById("forgotPasswordForm")?.addEventListener("submit", function (e) {
         e.preventDefault();
