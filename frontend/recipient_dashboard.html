@@ -148,6 +148,27 @@
 
                 </div>
 
+                <div class="filter-box">
+                    <label for="recipientLocation">Pickup Location</label>
+                    <input type="text" id="recipientLocation" placeholder="e.g. Vellore">
+                </div>
+
+                <div class="filter-box">
+                    <label for="requiredQuantity">Quantity Needed</label>
+                    <input type="number" id="requiredQuantity" min="1" placeholder="e.g. 10">
+                </div>
+
+                <div class="filter-box">
+                    <label for="recipientUrgency">Urgency</label>
+                    <select id="recipientUrgency">
+                        <option value="">Any urgency</option>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+
             </section>
 
 
@@ -156,13 +177,15 @@
 
                 <div class="section-heading">
 
-                    <h2>Available Resources</h2>
+                    <h2>Recommended Resources</h2>
 
                     <span id="resourceCount">
                         0 resources
                     </span>
 
                 </div>
+
+                <p id="matchingStatus" class="matching-status" role="status"></p>
 
 
                 <div
@@ -239,7 +262,7 @@
     </div>
 
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260912"></script>
 
 </body>
 

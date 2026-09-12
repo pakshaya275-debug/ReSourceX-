@@ -7,8 +7,13 @@ node_modules/
 # Environment files
 .env
 .env.local
+backend/.env
 
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Backend dependencies and logs
+backend/node_modules/
+npm-debug.log*
 

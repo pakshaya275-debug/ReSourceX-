@@ -8,6 +8,8 @@ const { Pool } = require("pg");
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
+const isProduction = process.env.NODE_ENV === "production";
+if (isProduction && !process.env.JWT_SECRET) throw new Error("JWT_SECRET must be configured in production");
 const jwtSecret = process.env.JWT_SECRET || "development-only-change-me";
 if (!process.env.JWT_SECRET) console.warn("JWT_SECRET is not set. Use a strong secret outside local development.");
 
@@ -22,7 +24,7 @@ const pool = new Pool(process.env.DATABASE_URL ? {
   password: process.env.PGPASSWORD || "postgres"
 });
 
-const origins = (process.env.CORS_ORIGIN || "*").split(",").map(value => value.trim()).filter(Boolean);
+const origins = (process.env.CORS_ORIGIN || "http://localhost:5500,http://127.0.0.1:5500").split(",").map(value => value.trim()).filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => !origin || origins.includes("*") || origins.includes(origin)
     ? callback(null, true) : callback(new Error("CORS origin is not allowed")),
@@ -52,6 +54,7 @@ const requestView = row => ({
   id: row.id, resourceId: row.resource_id, recipientId: row.recipient_id,
   status: row.status, urgency: row.urgency, purpose: row.purpose,
   requestedAt: row.requested_at, reviewedAt: row.reviewed_at,
+  handedOverAt: row.handed_over_at, completedAt: row.completed_at,
   resource: row.resource_name ? {
     id: row.resource_id, name: row.resource_name, category: row.resource_category,
     quantity: row.resource_quantity, location: row.resource_location,
@@ -89,7 +92,7 @@ function urgencyOf(value) {
 async function getRequest(client, requestId) {
   const result = await client.query(
     "SELECT q.id, q.resource_id, q.recipient_id, q.status, q.urgency, q.purpose, " +
-    "q.requested_at, q.reviewed_at, r.name AS resource_name, " +
+    "q.requested_at, q.reviewed_at, q.handed_over_at, q.completed_at, r.name AS resource_name, " +
     "r.category AS resource_category, r.quantity AS resource_quantity, " +
     "r.location AS resource_location, r.status AS resource_status, r.donor_id, " +
     "u.first_name AS recipient_first_name, u.last_name AS recipient_last_name, " +
@@ -142,6 +145,48 @@ app.get("/api/auth/me", requireAuth, asyncRoute(async (req, res) => {
   const result = await pool.query("SELECT id, first_name, last_name, email, role, created_at FROM users WHERE id = $1", [req.user.id]);
   if (!result.rows[0]) return res.status(404).json({ error: "User not found" });
   return res.json({ user: userView(result.rows[0]) });
+}));
+
+app.get("/api/admin/users", requireAuth, requireRole("ADMIN"), asyncRoute(async (req, res) => {
+  const result = await pool.query(
+    "SELECT id, first_name, last_name, email, role, created_at FROM users ORDER BY created_at DESC"
+  );
+  return res.json({ users: result.rows.map(userView), count: result.rowCount });
+}));
+
+app.get("/api/admin/stats", requireAuth, requireRole("ADMIN"), asyncRoute(async (req, res) => {
+  const result = await pool.query(
+    "SELECT " +
+    "(SELECT COUNT(*)::int FROM users) AS users_total, " +
+    "(SELECT COUNT(*)::int FROM users WHERE role = 'DONOR') AS donors_total, " +
+    "(SELECT COUNT(*)::int FROM users WHERE role = 'RECIPIENT') AS recipients_total, " +
+    "(SELECT COUNT(*)::int FROM resources) AS resources_total, " +
+    "(SELECT COUNT(*)::int FROM resources WHERE status = 'AVAILABLE') AS resources_available, " +
+    "(SELECT COUNT(*)::int FROM resources WHERE status = 'REQUESTED') AS resources_requested, " +
+    "(SELECT COUNT(*)::int FROM resources WHERE status = 'ALLOCATED') AS resources_allocated, " +
+    "(SELECT COUNT(*)::int FROM resources WHERE status = 'COMPLETED') AS resources_completed, " +
+    "(SELECT COUNT(*)::int FROM requests) AS requests_total, " +
+    "(SELECT COUNT(*)::int FROM requests WHERE status = 'PENDING') AS requests_pending, " +
+    "(SELECT COUNT(*)::int FROM requests WHERE status = 'APPROVED') AS requests_approved, " +
+    "(SELECT COUNT(*)::int FROM requests WHERE status = 'HANDED_OVER') AS requests_handed_over, " +
+    "(SELECT COUNT(*)::int FROM requests WHERE status = 'COMPLETED') AS requests_completed, " +
+    "(SELECT COUNT(*)::int FROM requests WHERE status = 'DECLINED') AS requests_declined"
+  );
+  const row = result.rows[0];
+  return res.json({
+    users: { total: row.users_total, donors: row.donors_total, recipients: row.recipients_total },
+    resources: { total: row.resources_total, available: row.resources_available, requested: row.resources_requested, allocated: row.resources_allocated, completed: row.resources_completed },
+    requests: { total: row.requests_total, pending: row.requests_pending, approved: row.requests_approved, handedOver: row.requests_handed_over, completed: row.requests_completed, declined: row.requests_declined }
+  });
+}));
+
+app.delete("/api/admin/users/:id", requireAuth, requireRole("ADMIN"), asyncRoute(async (req, res) => {
+  const userId = idOf(req.params.id);
+  if (!userId) return res.status(400).json({ error: "Invalid user id" });
+  if (userId === req.user.id) return res.status(409).json({ error: "You cannot delete your own administrator account" });
+  const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [userId]);
+  if (!result.rows[0]) return res.status(404).json({ error: "User not found" });
+  return res.status(204).send();
 }));
 
 app.get("/api/resources", requireAuth, asyncRoute(async (req, res) => {
@@ -229,10 +274,10 @@ app.get("/api/requests", requireAuth, asyncRoute(async (req, res) => {
   if (req.user.role === "RECIPIENT") { params.push(req.user.id); conditions.push("q.recipient_id = $" + params.length); }
   if (req.query.status) {
     const requestedStatus = status(req.query.status);
-    if (["PENDING", "APPROVED", "DECLINED"].includes(requestedStatus)) { params.push(requestedStatus); conditions.push("q.status = $" + params.length); }
+    if (["PENDING", "APPROVED", "DECLINED", "HANDED_OVER", "COMPLETED"].includes(requestedStatus)) { params.push(requestedStatus); conditions.push("q.status = $" + params.length); }
   }
   const result = await pool.query(
-    "SELECT q.id, q.resource_id, q.recipient_id, q.status, q.urgency, q.purpose, q.requested_at, q.reviewed_at, " +
+    "SELECT q.id, q.resource_id, q.recipient_id, q.status, q.urgency, q.purpose, q.requested_at, q.reviewed_at, q.handed_over_at, q.completed_at, " +
     "r.name AS resource_name, r.category AS resource_category, r.quantity AS resource_quantity, " +
     "r.location AS resource_location, r.status AS resource_status, r.donor_id, " +
     "u.first_name AS recipient_first_name, u.last_name AS recipient_last_name, u.email AS recipient_email " +
@@ -298,14 +343,135 @@ async function reviewRequest(req, res, action) {
 app.put("/api/requests/:id/approve", requireAuth, requireRole("DONOR", "ADMIN"), asyncRoute((req, res) => reviewRequest(req, res, "approve")));
 app.put("/api/requests/:id/decline", requireAuth, requireRole("DONOR", "ADMIN"), asyncRoute((req, res) => reviewRequest(req, res, "decline")));
 
+async function markHandedOver(req, res) {
+  const requestId = idOf(req.params.id);
+  if (!requestId) return res.status(400).json({ error: "Invalid request id" });
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      "SELECT q.*, r.donor_id, r.status AS resource_status FROM requests q JOIN resources r ON r.id = q.resource_id WHERE q.id = $1 FOR UPDATE",
+      [requestId]
+    );
+    const request = result.rows[0];
+    if (!request) { await client.query("ROLLBACK"); finished = true; return res.status(404).json({ error: "Request not found" }); }
+    if (req.user.role === "DONOR" && request.donor_id !== req.user.id) { await client.query("ROLLBACK"); finished = true; return res.status(403).json({ error: "You can only hand over your resources" }); }
+    if (request.status !== "APPROVED" || request.resource_status !== "ALLOCATED") { await client.query("ROLLBACK"); finished = true; return res.status(409).json({ error: "Only an approved allocated request can be handed over" }); }
+    await client.query("UPDATE requests SET status = 'HANDED_OVER', handed_over_at = NOW() WHERE id = $1", [requestId]);
+    await client.query("UPDATE resources SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = $1", [request.resource_id]);
+    await client.query("COMMIT"); finished = true;
+    return res.json({ request: requestView(await getRequest(pool, requestId)) });
+  } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
+  finally { client.release(); }
+}
+
+async function confirmReceived(req, res) {
+  const requestId = idOf(req.params.id);
+  if (!requestId) return res.status(400).json({ error: "Invalid request id" });
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      "SELECT q.*, r.status AS resource_status FROM requests q JOIN resources r ON r.id = q.resource_id WHERE q.id = $1 FOR UPDATE",
+      [requestId]
+    );
+    const request = result.rows[0];
+    if (!request) { await client.query("ROLLBACK"); finished = true; return res.status(404).json({ error: "Request not found" }); }
+    if (req.user.role === "RECIPIENT" && request.recipient_id !== req.user.id) { await client.query("ROLLBACK"); finished = true; return res.status(403).json({ error: "You can only confirm your own requests" }); }
+    if (request.status !== "HANDED_OVER" || request.resource_status !== "HANDED_OVER") { await client.query("ROLLBACK"); finished = true; return res.status(409).json({ error: "Only a handed-over request can be completed" }); }
+    await client.query("UPDATE requests SET status = 'COMPLETED', completed_at = NOW() WHERE id = $1", [requestId]);
+    await client.query("UPDATE resources SET status = 'COMPLETED', updated_at = NOW() WHERE id = $1", [request.resource_id]);
+    await client.query("COMMIT"); finished = true;
+    return res.json({ request: requestView(await getRequest(pool, requestId)) });
+  } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
+  finally { client.release(); }
+}
+app.put("/api/requests/:id/handover", requireAuth, requireRole("DONOR", "ADMIN"), asyncRoute(markHandedOver));
+app.put("/api/requests/:id/complete", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRoute(confirmReceived));
+
 function conditionValue(value) { return ({ POOR: 1, FAIR: 2, GOOD: 3, EXCELLENT: 4, NEW: 5 })[String(value || "").trim().toUpperCase()] || 3; }
+function availabilityDays(value) {
+  const normalized = text(value).toLowerCase();
+  if (!normalized || normalized.includes("now") || normalized.includes("today")) return 0;
+  const dateMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) return null;
+  const availableDate = Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]));
+  const today = new Date();
+  const todayDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  return Math.max(0, Math.ceil((availableDate - todayDate) / 86400000));
+}
+function availabilityLabel(days) {
+  if (days === 0) return "Available immediately";
+  if (days === 1) return "Available tomorrow";
+  if (days !== null && days <= 7) return "Available within a week";
+  if (days !== null) return "Available later";
+  return "Availability needs review";
+}
 function matchingScore(resource, criteria) {
-  let score = 0; const reasons = []; const requiredQuantity = positiveInt(criteria.quantity);
-  if (criteria.category) { if (resource.category.toLowerCase() === text(criteria.category).toLowerCase()) { score += 35; reasons.push("Category matches"); } else reasons.push("Category differs"); } else score += 35;
-  if (requiredQuantity) { score += Math.min(1, resource.quantity / requiredQuantity) * 20; reasons.push(resource.quantity >= requiredQuantity ? "Quantity is sufficient" : "Partial quantity available"); } else score += 20;
-  if (criteria.condition) { score += Math.min(1, conditionValue(resource.condition) / conditionValue(criteria.condition)) * 15; reasons.push(conditionValue(resource.condition) >= conditionValue(criteria.condition) ? "Condition meets requirement" : "Condition is below requirement"); } else score += 15;
-  if (criteria.location) { if (resource.location.toLowerCase() === text(criteria.location).toLowerCase()) { score += 15; reasons.push("Location matches"); } else { score += 5; reasons.push("Location differs; verify distance"); } } else score += 15;
-  if (criteria.availabilityDays) { const requestedDays = Number(criteria.availabilityDays); const availableDays = Number((resource.availability.match(/\d+/) || [0])[0]); if (availableDays >= requestedDays) { score += 15; reasons.push("Availability window matches"); } else { score += 7; reasons.push("Availability window needs review"); } } else score += 15;
+  const requiredQuantity = positiveInt(criteria.quantity);
+  const requestedUrgency = criteria.urgency ? urgencyOf(criteria.urgency) : null;
+  const resourceDays = availabilityDays(resource.availability);
+  let score = 0;
+  const reasons = [];
+
+  if (criteria.category) {
+    if (text(resource.category).toLowerCase() === text(criteria.category).toLowerCase()) {
+      score += 30;
+      reasons.push("Same category");
+    } else {
+      reasons.push("Different category");
+    }
+  } else {
+    score += 30;
+    reasons.push("Category not specified");
+  }
+
+  if (criteria.location) {
+    const resourceLocation = text(resource.location).toLowerCase();
+    const requestedLocation = text(criteria.location).toLowerCase();
+    if (resourceLocation === requestedLocation) {
+      score += 20;
+      reasons.push("Same location");
+    } else if (resourceLocation.includes(requestedLocation) || requestedLocation.includes(resourceLocation)) {
+      score += 12;
+      reasons.push("Nearby location");
+    } else {
+      score += 5;
+      reasons.push("Different location; verify pickup distance");
+    }
+  } else {
+    score += 20;
+    reasons.push("Location not specified");
+  }
+
+  if (requiredQuantity) {
+    const quantityScore = Math.min(1, Number(resource.quantity) / requiredQuantity) * 20;
+    score += quantityScore;
+    reasons.push(resource.quantity >= requiredQuantity ? "Enough quantity available" : "Partial quantity available");
+  } else {
+    score += 20;
+    reasons.push("Quantity requirement not specified");
+  }
+
+  if (requestedUrgency) {
+    const urgencyScore = requestedUrgency >= 4
+      ? (resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 2 ? 10 : 5)
+      : requestedUrgency === 3
+        ? (resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 7 ? 12 : 8)
+        : (resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 14 ? 14 : 12);
+    score += urgencyScore;
+    reasons.push(requestedUrgency >= 4 && resourceDays === 0 ? "Suitable for urgent needs" : "Urgency considered");
+  } else {
+    score += 15;
+    reasons.push("Urgency not specified");
+  }
+
+  const availabilityScore = resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 2 ? 12 : resourceDays !== null && resourceDays <= 7 ? 9 : resourceDays !== null ? 5 : 3;
+  score += availabilityScore;
+  reasons.push(availabilityLabel(resourceDays));
+
   return { matchScore: Math.round(score), matchReasons: reasons };
 }
 app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
@@ -314,11 +480,16 @@ app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRo
   if (req.query.search) { params.push("%" + text(req.query.search) + "%"); conditions.push("(name ILIKE $" + params.length + " OR location ILIKE $" + params.length + " OR description ILIKE $" + params.length + ")"); }
   const result = await pool.query("SELECT * FROM resources WHERE " + conditions.join(" AND ") + " ORDER BY created_at DESC", params);
   const matches = result.rows.map(item => Object.assign(resourceView(item), matchingScore(item, req.query))).sort((a, b) => b.matchScore - a.matchScore);
-  return res.json({ matches, scoring: { category: 35, quantity: 20, condition: 15, location: 15, availability: 15 } });
+  return res.json({ matches, scoring: { category: 30, location: 20, quantity: 20, urgency: 15, availability: 15 } });
 }));
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
-app.use((error, req, res, next) => { console.error(error); if (res.headersSent) return next(error); return res.status(500).json({ error: "Internal server error" }); });
+app.use((error, req, res, next) => {
+  console.error(error);
+  if (res.headersSent) return next(error);
+  if (error.type === "entity.parse.failed" || error.status === 400) return res.status(400).json({ error: "Request body contains invalid JSON" });
+  return res.status(500).json({ error: "Internal server error" });
+});
 
 if (require.main === module) app.listen(port, () => console.log("ReSourceX API listening on port " + port));
 module.exports = { app, pool };

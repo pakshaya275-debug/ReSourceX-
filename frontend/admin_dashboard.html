@@ -40,6 +40,11 @@
                     <span>All Resources</span>
                 </a>
 
+                <a href="#requestsSection" class="nav-item">
+                    🔔
+                    <span>Requests</span>
+                </a>
+
             </nav>
 
             <div class="sidebar-bottom">
@@ -270,6 +275,34 @@
 
             </section>
 
+            <!-- REQUEST MONITORING TABLE -->
+            <section class="dashboard-section" id="requestsSection">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Request Monitoring</h2>
+                        <p>Track requests from submission through completion.</p>
+                    </div>
+                    <span id="adminRequestCount" class="view-all">0 Requests</span>
+                </div>
+
+                <div class="resource-table-container">
+                    <table class="resource-table">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Recipient</th>
+                                <th>Urgency</th>
+                                <th>Requested</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminRequestsTableBody"></tbody>
+                    </table>
+                </div>
+
+            </section>
+
         </main>
 
     </div>
@@ -362,7 +395,7 @@
     </div>
 
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260912"></script>
 
 </body>
 

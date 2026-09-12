@@ -34,6 +34,8 @@ function escapeHtml(str) {
 const API_BASE_URL = window.RESOURCEX_API_URL || "http://localhost:5000/api";
 const AUTH_TOKEN_KEY = "resourceXAuthToken";
 const CURRENT_USER_KEY = "resourceXCurrentUser";
+let recipientMatchCache = new Map();
+let adminResourceCache = new Map();
 
 function getAuthToken() {
     return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -131,6 +133,18 @@ function initAuth() {
     const forgotPasswordContainer = document.getElementById("forgotPasswordContainer");
     const forgotPasswordLink = document.getElementById("forgotPasswordLink");
     const backToSignInLink = document.getElementById("backToSignInLink");
+    const registerRole = document.getElementById("registerRole");
+    const adminCodeGroup = document.getElementById("adminCodeGroup");
+    const adminCodeInput = document.getElementById("adminCode");
+
+    registerRole?.addEventListener("change", function () {
+        const isAdmin = this.value.toLowerCase() === "admin";
+        adminCodeGroup?.classList.toggle("hidden", !isAdmin);
+        if (adminCodeInput) {
+            adminCodeInput.required = isAdmin;
+            if (!isAdmin) adminCodeInput.value = "";
+        }
+    });
 
     // Tab Switching: Sign In
     signInTab?.addEventListener("click", function () {
@@ -210,6 +224,7 @@ function initAuth() {
         const email = document.getElementById("registerEmail")?.value.trim().toLowerCase();
         const password = document.getElementById("registerPassword")?.value;
         const selectedRole = document.getElementById("registerRole")?.value;
+        const adminCode = document.getElementById("adminCode")?.value;
 
         if (!firstName || !lastName || !email || !password || !selectedRole) {
             alert("Please fill in all required fields.");
@@ -219,7 +234,7 @@ function initAuth() {
         try {
             await apiRequest("/auth/register", {
                 method: "POST",
-                body: { firstName, lastName, email, password, role: selectedRole }
+                body: { firstName, lastName, email, password, role: selectedRole, adminCode }
             });
             alert("🎉 Account created successfully! Please sign in.");
             document.getElementById("registerForm").reset();
@@ -277,7 +292,7 @@ let currentDonorFilter = "all";
  */
 function openDonorModalById(resourceId) {
     const resources = getResources();
-    const resource = resources.find(r => String(r.id) === String(resourceId));
+    const resource = adminResourceCache.get(String(resourceId)) || resources.find(r => String(r.id) === String(resourceId));
 
     if (!resource) {
         alert("Resource details not found.");
@@ -406,10 +421,41 @@ function renderDonorMyResources() {
 /**
  * Renders the Incoming Requests table in donor dashboard
  */
-function renderDonorRequests() {
+async function renderDonorRequests() {
     const requestsTableBody = document.getElementById("donorRequestsTableBody");
     const badgeEl = document.getElementById("donorPendingRequestsBadge");
     if (!requestsTableBody && !badgeEl) return;
+
+    if (getAuthToken() && getCurrentUser()?.role === "DONOR") {
+        try {
+            const data = await apiRequest("/requests");
+            const requests = data.requests || [];
+            const pendingRequests = requests.filter(request => request.status === "PENDING");
+            if (badgeEl) badgeEl.textContent = `${pendingRequests.length} Pending`;
+            if (!requestsTableBody) return;
+            requestsTableBody.innerHTML = "";
+            if (!requests.length) {
+                requestsTableBody.innerHTML = `<tr><td colspan="6" class="empty-table-cell">No requests have been submitted yet.</td></tr>`;
+                return;
+            }
+            requests.forEach(request => {
+                const resource = request.resource || {};
+                const action = request.status === "PENDING"
+                    ? `<button type="button" class="btn-approve" onclick="reviewApiRequest('${request.id}', 'approve')">Approve</button><button type="button" class="btn-decline" onclick="reviewApiRequest('${request.id}', 'decline')">Decline</button>`
+                    : request.status === "APPROVED"
+                        ? `<button type="button" class="btn-approve" onclick="handoverApiRequest('${request.id}')">Mark handed over</button>`
+                        : request.status === "HANDED_OVER"
+                            ? "Awaiting recipient confirmation"
+                            : request.status === "COMPLETED" ? "Completed" : "No action";
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td><strong>${escapeHtml(resource.name || "Resource")}</strong></td><td>${escapeHtml(resource.category || "Other")}</td><td>${escapeHtml(String(resource.quantity || "-"))}</td><td>${escapeHtml(resource.location || "Not specified")}</td><td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span></td><td><div class="admin-actions">${action}</div></td>`;
+                requestsTableBody.appendChild(tr);
+            });
+            return;
+        } catch (error) {
+            console.error("Unable to load donor requests", error);
+        }
+    }
 
     const resources = getResources();
     const requestedItems = resources.filter(r => (r.status || "").toLowerCase() === "requested");
@@ -463,6 +509,26 @@ function renderDonorRequests() {
         `;
         requestsTableBody.appendChild(tr);
     });
+}
+
+async function reviewApiRequest(requestId, action) {
+    try {
+        await apiRequest(`/requests/${requestId}/${action}`, { method: "PUT" });
+        alert(action === "approve" ? "Request approved and allocated." : "Request declined.");
+        await renderDonorRequests();
+    } catch (error) {
+        alert("❌ " + error.message);
+    }
+}
+
+async function handoverApiRequest(requestId) {
+    try {
+        await apiRequest(`/requests/${requestId}/handover`, { method: "PUT" });
+        alert("Resource marked as handed over.");
+        await renderDonorRequests();
+    } catch (error) {
+        alert("❌ " + error.message);
+    }
 }
 
 /**
@@ -612,7 +678,7 @@ function initAddResource() {
     const form = document.getElementById("resourceForm");
     if (!form) return;
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const name = document.getElementById("resourceName")?.value.trim();
@@ -627,6 +693,33 @@ function initAddResource() {
         if (!name || !category || !quantity) {
             alert("Please fill in the resource name, category, and quantity.");
             return;
+        }
+
+        if (getAuthToken()) {
+            const submitButton = form.querySelector("button[type=submit]");
+            if (submitButton) submitButton.disabled = true;
+            try {
+                await apiRequest("/resources", {
+                    method: "POST",
+                    body: {
+                        name,
+                        category,
+                        quantity: Number(quantity),
+                        condition: condition || "Good",
+                        location: location || "Not specified",
+                        availability: availability || "Available now",
+                        description: description || "No description provided.",
+                        specifications: specifications || "Standard"
+                    }
+                });
+                alert("🎉 Resource added successfully!");
+                window.location.href = "donor_dashboard.html";
+                return;
+            } catch (error) {
+                if (submitButton) submitButton.disabled = false;
+                alert("❌ " + error.message);
+                return;
+            }
         }
 
         const newResource = {
@@ -665,78 +758,95 @@ function initRecipientDashboard() {
     const categoryFilter = document.getElementById("categoryFilter");
     const resourceCount = document.getElementById("resourceCount");
     const emptyState = document.getElementById("emptyState");
+    const locationInput = document.getElementById("recipientLocation");
+    const quantityInput = document.getElementById("requiredQuantity");
+    const urgencySelect = document.getElementById("recipientUrgency");
+    const matchingStatus = document.getElementById("matchingStatus");
+    let matchingRequestId = 0;
+    let matchingDebounceTimer;
 
-    function renderRecipientGrid() {
-        const resources = getResources();
+    async function renderRecipientGrid() {
         const searchTerm = (searchInput?.value || "").toLowerCase().trim();
         const selectedCategory = (categoryFilter?.value || "all").toLowerCase();
+        const requestId = ++matchingRequestId;
+        const query = new URLSearchParams();
+        if (selectedCategory !== "all") query.set("category", selectedCategory);
+        if (searchTerm) query.set("search", searchTerm);
+        if (locationInput?.value.trim()) query.set("location", locationInput.value.trim());
+        if (quantityInput?.value) query.set("quantity", quantityInput.value);
+        if (urgencySelect?.value) query.set("urgency", urgencySelect.value);
 
-        // Recipient only sees items with status === "Available"
-        const filtered = resources.filter(res => {
-            const isAvailable = (res.status || "available").toLowerCase() === "available";
-            const matchesSearch = (res.name || "").toLowerCase().includes(searchTerm) ||
-                                  (res.location || "").toLowerCase().includes(searchTerm) ||
-                                  (res.description || "").toLowerCase().includes(searchTerm);
-            const matchesCategory = selectedCategory === "all" || (res.category || "").toLowerCase() === selectedCategory;
-
-            return isAvailable && matchesSearch && matchesCategory;
-        });
-
-        resourceList.innerHTML = "";
-
-        if (resourceCount) {
-            resourceCount.textContent = `${filtered.length} resource${filtered.length !== 1 ? "s" : ""}`;
+        if (matchingStatus) {
+            matchingStatus.className = "matching-status loading";
+            matchingStatus.textContent = "Loading recommendations...";
         }
-
-        if (filtered.length === 0) {
-            if (emptyState) emptyState.style.display = "block";
-            return;
-        }
-
         if (emptyState) emptyState.style.display = "none";
 
-        filtered.forEach(res => {
-            const card = document.createElement("div");
-            card.className = "resource-card";
+        try {
+            const data = await apiRequest(`/matching?${query.toString()}`);
+            if (requestId !== matchingRequestId) return;
+            const matches = Array.isArray(data.matches) ? data.matches : [];
+            recipientMatchCache = new Map(matches.map(match => [String(match.id), match]));
+            resourceList.innerHTML = "";
+            if (matchingStatus) {
+                matchingStatus.className = "matching-status";
+                matchingStatus.textContent = matches.length ? "Ranked by match score" : "No suitable available resources matched these requirements.";
+            }
+            if (resourceCount) resourceCount.textContent = `${matches.length} resource${matches.length !== 1 ? "s" : ""}`;
+            if (!matches.length) {
+                if (emptyState) emptyState.style.display = "block";
+                return;
+            }
 
-            card.innerHTML = `
-                <div class="resource-card-header">
-                    <div class="resource-icon">📦</div>
-                    <span class="resource-category">${escapeHtml(res.category || "Other")}</span>
-                </div>
-
-                <h3>${escapeHtml(res.name)}</h3>
-
-                <div class="resource-details">
-                    <p><strong>Quantity:</strong> ${escapeHtml(String(res.quantity))}</p>
-                    <p><strong>Condition:</strong> ${escapeHtml(res.condition || "Good")}</p>
-                    <p><strong>Location:</strong> ${escapeHtml(res.location || "Not specified")}</p>
-                    <p><strong>Available:</strong> ${escapeHtml(res.availability || "Today")}</p>
-                </div>
-
-                <div class="resource-card-actions">
-                    <button
-                        type="button"
-                        class="view-details-btn"
-                        onclick="viewResource('${res.id}')">
-                        View Details
-                    </button>
-
-                    <button
-                        type="button"
-                        class="request-btn"
-                        onclick="requestResource('${res.id}')">
-                        Request Resource
-                    </button>
-                </div>
-            `;
-
-            resourceList.appendChild(card);
-        });
+            if (emptyState) emptyState.style.display = "none";
+            matches.forEach(res => {
+                const card = document.createElement("div");
+                card.className = "resource-card recommended-card";
+                const reasons = (res.matchReasons || []).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
+                card.innerHTML = `
+                    <div class="resource-card-header">
+                        <div class="resource-icon">📦</div>
+                        <span class="resource-category">${escapeHtml(res.category || "Other")}</span>
+                    </div>
+                    <div class="match-score">${escapeHtml(String(res.matchScore))}% Match</div>
+                    <h3>${escapeHtml(res.name)}</h3>
+                    <div class="resource-details">
+                        <p><strong>Quantity:</strong> ${escapeHtml(String(res.quantity))}</p>
+                        <p><strong>Condition:</strong> ${escapeHtml(res.condition || "Good")}</p>
+                        <p><strong>Location:</strong> ${escapeHtml(res.location || "Not specified")}</p>
+                        <p><strong>Available:</strong> ${escapeHtml(res.availability || "Today")}</p>
+                    </div>
+                    <ul class="match-reasons">${reasons}</ul>
+                    <div class="resource-card-actions">
+                        <button type="button" class="view-details-btn" onclick="viewResource('${escapeHtml(res.id)}')">View Details</button>
+                        <button type="button" class="request-btn" onclick="requestResource('${escapeHtml(res.id)}')">Request Resource</button>
+                    </div>
+                `;
+                resourceList.appendChild(card);
+            });
+        } catch (error) {
+            if (requestId !== matchingRequestId) return;
+            if (matchingStatus) {
+                matchingStatus.className = "matching-status error";
+                matchingStatus.textContent = "Unable to refresh recommendations. Showing the previous results.";
+            }
+            if (emptyState) {
+                emptyState.style.display = resourceList.children.length ? "none" : "block";
+            }
+            console.error("Matching request failed", error);
+        }
     }
 
-    searchInput?.addEventListener("input", renderRecipientGrid);
-    categoryFilter?.addEventListener("change", renderRecipientGrid);
+    function scheduleRecipientMatch() {
+        clearTimeout(matchingDebounceTimer);
+        matchingDebounceTimer = setTimeout(renderRecipientGrid, 300);
+    }
+
+    searchInput?.addEventListener("input", scheduleRecipientMatch);
+    categoryFilter?.addEventListener("change", scheduleRecipientMatch);
+    locationInput?.addEventListener("input", scheduleRecipientMatch);
+    quantityInput?.addEventListener("input", scheduleRecipientMatch);
+    urgencySelect?.addEventListener("change", scheduleRecipientMatch);
 
     renderRecipientGrid();
     renderRecipientRequests();
@@ -754,10 +864,35 @@ function initRecipientDashboard() {
 /**
  * Renders the My Submitted Requests section in recipient dashboard
  */
-function renderRecipientRequests() {
+async function renderRecipientRequests() {
     const tableBody = document.getElementById("recipientRequestsTableBody");
     const countEl = document.getElementById("recipientRequestCount");
     if (!tableBody) return;
+
+    if (getAuthToken() && getCurrentUser()?.role === "RECIPIENT") {
+        try {
+            const data = await apiRequest("/requests");
+            const requests = data.requests || [];
+            if (countEl) countEl.textContent = `${requests.length} Request${requests.length !== 1 ? "s" : ""}`;
+            tableBody.innerHTML = "";
+            if (!requests.length) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="empty-table-cell">You haven't requested any resources yet.</td></tr>`;
+                return;
+            }
+            requests.forEach(request => {
+                const resource = request.resource || {};
+                const action = request.status === "HANDED_OVER"
+                    ? `<button type="button" class="btn-approve" onclick="completeApiRequest('${request.id}')">Confirm received</button>`
+                    : request.status === "COMPLETED" ? "Receipt confirmed" : "";
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td><strong>${escapeHtml(resource.name || "Resource")}</strong></td><td>${escapeHtml(resource.category || "Other")}</td><td>${escapeHtml(String(resource.quantity || "-"))}</td><td>${escapeHtml(resource.location || "Not specified")}</td><td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span> ${action}</td>`;
+                tableBody.appendChild(tr);
+            });
+            return;
+        } catch (error) {
+            console.error("Unable to load recipient requests", error);
+        }
+    }
 
     const resources = getResources();
     const myRequests = resources.filter(r => {
@@ -802,12 +937,22 @@ function renderRecipientRequests() {
     });
 }
 
+async function completeApiRequest(requestId) {
+    try {
+        await apiRequest(`/requests/${requestId}/complete`, { method: "PUT" });
+        alert("Receipt confirmed. The request is complete.");
+        await renderRecipientRequests();
+    } catch (error) {
+        alert("❌ " + error.message);
+    }
+}
+
 /**
  * Saves selected resource and navigates to resource_details.html
  */
 function viewResource(resourceId) {
     const resources = getResources();
-    const resource = resources.find(r => String(r.id) === String(resourceId));
+    const resource = recipientMatchCache.get(String(resourceId)) || resources.find(r => String(r.id) === String(resourceId));
 
     if (!resource) {
         alert("Resource not found.");
@@ -823,7 +968,7 @@ function viewResource(resourceId) {
  */
 function requestResource(resourceId) {
     const resources = getResources();
-    const resource = resources.find(r => String(r.id) === String(resourceId));
+    const resource = recipientMatchCache.get(String(resourceId)) || resources.find(r => String(r.id) === String(resourceId));
 
     if (!resource) {
         alert("Resource not found.");
@@ -921,11 +1066,33 @@ function initRequestConfirmation() {
     const locEl = document.getElementById("confirmLocation");
     if (locEl) locEl.textContent = selectedResource.location || "Not specified";
 
-    confirmBtn.addEventListener("click", function () {
+    confirmBtn.addEventListener("click", async function () {
+        confirmBtn.disabled = true;
+        const urgency = document.getElementById("requestUrgency")?.value || "MEDIUM";
+        const purpose = document.getElementById("requestPurpose")?.value.trim() || "";
+
+        if (getAuthToken() && Number.isSafeInteger(Number(selectedResource.id))) {
+            try {
+                await apiRequest("/requests", {
+                    method: "POST",
+                    body: { resourceId: Number(selectedResource.id), urgency, purpose }
+                });
+                localStorage.removeItem("selectedResource");
+                alert("🎉 Resource request submitted successfully! The donor has received your request.");
+                window.location.href = "recipient_dashboard.html";
+                return;
+            } catch (error) {
+                confirmBtn.disabled = false;
+                alert("❌ " + error.message);
+                return;
+            }
+        }
+
         const resources = getResources();
         const index = resources.findIndex(r => String(r.id) === String(selectedResource.id));
 
         if (index === -1) {
+            confirmBtn.disabled = false;
             alert("Resource not found in current listings.");
             window.location.href = "recipient_dashboard.html";
             return;
@@ -947,11 +1114,110 @@ function initRequestConfirmation() {
    6. ADMIN CONTROLLER (admin_dashboard.html)
    ========================================================================== */
 
+async function initLiveAdminDashboard() {
+    const usersTableBody = document.getElementById("adminUsersTableBody");
+    const resourcesTableBody = document.getElementById("adminResourcesTableBody");
+    const requestsTableBody = document.getElementById("adminRequestsTableBody");
+    if (usersTableBody) usersTableBody.innerHTML = `<tr><td colspan="5" class="loading-cell">Loading users...</td></tr>`;
+    if (resourcesTableBody) resourcesTableBody.innerHTML = `<tr><td colspan="6" class="loading-cell">Loading resources...</td></tr>`;
+    if (requestsTableBody) requestsTableBody.innerHTML = `<tr><td colspan="5" class="loading-cell">Loading requests...</td></tr>`;
+    try {
+        const [usersData, stats, resourcesData, requestsData] = await Promise.all([
+            apiRequest("/admin/users"),
+            apiRequest("/admin/stats"),
+            apiRequest("/resources"),
+            apiRequest("/requests")
+        ]);
+        const users = usersData.users || [];
+        const resources = resourcesData.resources || [];
+        const requests = requestsData.requests || [];
+        adminResourceCache = new Map(resources.map(resource => [String(resource.id), resource]));
+
+        document.getElementById("adminTotalUsers").textContent = stats.users.total;
+        document.getElementById("adminTotalResources").textContent = stats.resources.total;
+        document.getElementById("adminTotalRequests").textContent = stats.requests.pending + stats.requests.approved + stats.requests.handedOver;
+        document.getElementById("adminTotalAllocated").textContent = stats.resources.completed;
+        document.getElementById("adminUserCount").textContent = `${users.length} Users`;
+        document.getElementById("adminRequestCount").textContent = `${requests.length} Requests`;
+
+        if (usersTableBody) {
+            usersTableBody.innerHTML = users.length ? users.map(user => `
+                <tr>
+                    <td><strong>${escapeHtml(user.firstName)} ${escapeHtml(user.lastName)}</strong></td>
+                    <td>${escapeHtml(user.email)}</td>
+                    <td><span class="role-badge ${(user.role || "user").toLowerCase()}">${escapeHtml(user.role)}</span></td>
+                    <td><span class="status available">Active</span></td>
+                    <td><button type="button" class="admin-btn-delete" onclick="adminDeleteUserApi('${user.id}')">Delete</button></td>
+                </tr>
+            `).join("") : `<tr><td colspan="5" class="empty-table-cell">No registered users in the network yet.</td></tr>`;
+        }
+
+        if (resourcesTableBody) {
+            resourcesTableBody.innerHTML = resources.length ? resources.map(resource => `
+                <tr>
+                    <td><strong>${escapeHtml(resource.name)}</strong></td>
+                    <td>${escapeHtml(resource.category || "Other")}</td>
+                    <td>${escapeHtml(String(resource.quantity))}</td>
+                    <td>${escapeHtml(resource.location || "Not specified")}</td>
+                    <td><span class="status ${(resource.status || "").toLowerCase()}">${escapeHtml(resource.status)}</span></td>
+                    <td><button type="button" class="table-btn" onclick="openDonorModalById('${resource.id}')">View</button><button type="button" class="admin-btn-delete" onclick="adminDeleteResourceApi('${resource.id}')">Remove</button></td>
+                </tr>
+            `).join("") : `<tr><td colspan="6" class="empty-table-cell">No resources currently listed in the database.</td></tr>`;
+        }
+
+        if (requestsTableBody) {
+            requestsTableBody.innerHTML = requests.length ? requests.map(request => {
+                const recipient = request.recipient || {};
+                const resource = request.resource || {};
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(resource.name || "Resource")}</strong></td>
+                        <td>${escapeHtml(`${recipient.firstName || ""} ${recipient.lastName || ""}`.trim() || recipient.email || "Recipient")}</td>
+                        <td>${escapeHtml(String(request.urgency || "-"))}</td>
+                        <td>${escapeHtml(request.requestedAt ? new Date(request.requestedAt).toLocaleDateString() : "-")}</td>
+                        <td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span></td>
+                    </tr>
+                `;
+            }).join("") : `<tr><td colspan="5" class="empty-table-cell">No requests have been submitted yet.</td></tr>`;
+        }
+    } catch (error) {
+        console.error("Unable to load live admin dashboard", error);
+        if (usersTableBody) usersTableBody.innerHTML = `<tr><td colspan="5" class="empty-table-cell">Unable to load admin data. Please try again.</td></tr>`;
+        if (resourcesTableBody) resourcesTableBody.innerHTML = `<tr><td colspan="6" class="empty-table-cell">Unable to load admin data. Please try again.</td></tr>`;
+        if (requestsTableBody) requestsTableBody.innerHTML = `<tr><td colspan="5" class="empty-table-cell">Unable to load admin data. Please try again.</td></tr>`;
+    }
+}
+
+async function adminDeleteUserApi(userId) {
+    if (!confirm("Are you sure you want to remove this user?")) return;
+    try {
+        await apiRequest(`/admin/users/${userId}`, { method: "DELETE" });
+        await initLiveAdminDashboard();
+    } catch (error) {
+        alert("❌ " + error.message);
+    }
+}
+
+async function adminDeleteResourceApi(resourceId) {
+    if (!confirm("Are you sure you want to remove this resource from the exchange?")) return;
+    try {
+        await apiRequest(`/resources/${resourceId}`, { method: "DELETE" });
+        await initLiveAdminDashboard();
+    } catch (error) {
+        alert("❌ " + error.message);
+    }
+}
+
 function initAdminDashboard() {
     const usersTableBody = document.getElementById("adminUsersTableBody");
     const resourcesTableBody = document.getElementById("adminResourcesTableBody");
 
     if (!usersTableBody && !resourcesTableBody) return;
+
+    if (getAuthToken() && getCurrentUser()?.role === "ADMIN") {
+        initLiveAdminDashboard();
+        return;
+    }
 
     const accounts = getAccounts();
     const resources = getResources();
@@ -1085,6 +1351,11 @@ function adminDeleteResource(resourceId) {
 
 function initializeApp() {
     initAuth();
+    document.querySelectorAll("a.logout").forEach(logoutLink => {
+        logoutLink.addEventListener("click", function () {
+            clearAuthSession();
+        });
+    });
     initDonorDashboard();
     initAddResource();
     initRecipientDashboard();
@@ -1098,4 +1369,4 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeApp);
 } else {
     initializeApp();
-}
+}

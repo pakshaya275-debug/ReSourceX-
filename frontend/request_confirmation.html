@@ -70,6 +70,21 @@
                     <strong id="confirmLocation">-</strong>
                 </p>
 
+                <div class="form-group confirmation-input">
+                    <label for="requestUrgency">Request urgency</label>
+                    <select id="requestUrgency">
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM" selected>Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+
+                <div class="form-group confirmation-input">
+                    <label for="requestPurpose">How will this resource be used?</label>
+                    <textarea id="requestPurpose" rows="3" placeholder="Briefly describe your need."></textarea>
+                </div>
+
             </div>
 
 
@@ -100,7 +115,7 @@
     </main>
 
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260912"></script>
 
 </body>
 
