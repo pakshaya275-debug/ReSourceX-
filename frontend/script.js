@@ -36,6 +36,7 @@ const AUTH_TOKEN_KEY = "resourceXAuthToken";
 const CURRENT_USER_KEY = "resourceXCurrentUser";
 let recipientMatchCache = new Map();
 let adminResourceCache = new Map();
+let donorResourceCache = null;
 
 function getAuthToken() {
     return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -364,7 +365,7 @@ function renderDonorMyResources() {
     const tableBody = document.getElementById("donorResourceTableBody");
     if (!tableBody) return;
 
-    const resources = getResources();
+    const resources = Array.isArray(donorResourceCache) ? donorResourceCache : getResources();
     const filtered = resources.filter(res => {
         if (currentDonorFilter === "all") return true;
         return (res.status || "available").toLowerCase() === currentDonorFilter;
@@ -531,6 +532,35 @@ async function handoverApiRequest(requestId) {
     }
 }
 
+async function initLiveDonorDashboard() {
+    const tableBody = document.getElementById("donorResourceTableBody");
+    const activityList = document.getElementById("donorActivityList");
+    if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="loading-cell">Loading your resources...</td></tr>`;
+    if (activityList) activityList.innerHTML = `<div class="activity-item"><div><p>Loading activity...</p></div></div>`;
+    try {
+        const data = await apiRequest("/resources");
+        donorResourceCache = data.resources || [];
+        const resources = donorResourceCache;
+        const counts = {
+            total: resources.length,
+            available: resources.filter(resource => resource.status === "AVAILABLE").length,
+            requested: resources.filter(resource => resource.status === "REQUESTED").length,
+            allocated: resources.filter(resource => ["ALLOCATED", "HANDED_OVER", "COMPLETED"].includes(resource.status)).length
+        };
+        document.getElementById("donorTotalCount").textContent = counts.total;
+        document.getElementById("donorAvailableCount").textContent = counts.available;
+        document.getElementById("donorRequestedCount").textContent = counts.requested;
+        document.getElementById("donorAllocatedCount").textContent = counts.allocated;
+        renderDonorMyResources();
+        renderDonorActivity();
+        await renderDonorRequests();
+    } catch (error) {
+        console.error("Unable to load donor resources", error);
+        if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="empty-table-cell">Unable to load your resources. Please refresh and try again.</td></tr>`;
+        if (activityList) activityList.innerHTML = `<div class="activity-item"><div><p>Unable to load activity. Please refresh and try again.</p></div></div>`;
+    }
+}
+
 /**
  * Donor approves request: status becomes "Allocated"
  */
@@ -575,6 +605,16 @@ function donorDeclineRequest(resourceId) {
 function donorDeleteResource(resourceId) {
     if (!confirm("Are you sure you want to delete this resource?")) return;
 
+    if (getAuthToken() && Number.isSafeInteger(Number(resourceId))) {
+        apiRequest(`/resources/${resourceId}`, { method: "DELETE" })
+            .then(() => {
+                alert("🗑️ Resource deleted.");
+                initLiveDonorDashboard();
+            })
+            .catch(error => alert("❌ " + error.message));
+        return;
+    }
+
     let resources = getResources();
     resources = resources.filter(r => String(r.id) !== String(resourceId));
     saveResources(resources);
@@ -590,7 +630,7 @@ function renderDonorActivity() {
     const activityList = document.getElementById("donorActivityList");
     if (!activityList) return;
 
-    const resources = getResources();
+    const resources = Array.isArray(donorResourceCache) ? donorResourceCache : getResources();
     activityList.innerHTML = "";
 
     if (resources.length === 0) {
@@ -637,6 +677,11 @@ function renderDonorActivity() {
 function initDonorDashboard() {
     const isDonorDashboard = document.getElementById("donorResourceTableBody") || document.getElementById("donorRequestsTableBody");
     if (!isDonorDashboard) return;
+
+    if (getAuthToken() && getCurrentUser()?.role === "DONOR") {
+        initLiveDonorDashboard();
+        return;
+    }
 
     const resources = getResources();
 
