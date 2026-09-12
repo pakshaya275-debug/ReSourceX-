@@ -31,7 +31,7 @@ function escapeHtml(str) {
 /* ==========================================================================
    BACKEND API CLIENT (authentication migration — resources remain local for now)
    ========================================================================== */
-const API_BASE_URL = window.RESOURCEX_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = window.RESOURCEX_API_URL || "https://resourcex-hjz9.onrender.com/api";
 const AUTH_TOKEN_KEY = "resourceXAuthToken";
 const CURRENT_USER_KEY = "resourceXCurrentUser";
 let recipientMatchCache = new Map();
