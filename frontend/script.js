@@ -293,7 +293,9 @@ let currentDonorFilter = "all";
  */
 function openDonorModalById(resourceId) {
     const resources = getResources();
-    const resource = adminResourceCache.get(String(resourceId)) || resources.find(r => String(r.id) === String(resourceId));
+    const resource = adminResourceCache.get(String(resourceId)) ||
+        (Array.isArray(donorResourceCache) ? donorResourceCache.find(r => String(r.id) === String(resourceId)) : null) ||
+        resources.find(r => String(r.id) === String(resourceId));
 
     if (!resource) {
         alert("Resource details not found.");
