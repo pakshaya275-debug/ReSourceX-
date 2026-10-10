@@ -217,7 +217,15 @@ app.get("/api/resources", requireAuth, asyncRoute(async (req, res) => {
 app.get("/api/resources/:id", requireAuth, asyncRoute(async (req, res) => {
   const resourceId = idOf(req.params.id);
   if (!resourceId) return res.status(400).json({ error: "Invalid resource id" });
-  const result = await pool.query("SELECT * FROM resources WHERE id = $1", [resourceId]);
+
+  // Match the visibility rules used by the resource list: recipients only see
+  // available resources, and donors only see resources they own.
+  const result = req.user.role === "ADMIN"
+    ? await pool.query("SELECT * FROM resources WHERE id = $1", [resourceId])
+    : req.user.role === "DONOR"
+      ? await pool.query("SELECT * FROM resources WHERE id = $1 AND donor_id = $2", [resourceId, req.user.id])
+      : await pool.query("SELECT * FROM resources WHERE id = $1 AND status = 'AVAILABLE'", [resourceId]);
+
   if (!result.rows[0]) return res.status(404).json({ error: "Resource not found" });
   return res.json({ resource: resourceView(result.rows[0]) });
 }));
