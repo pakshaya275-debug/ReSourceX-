@@ -492,6 +492,192 @@ app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRo
   return res.json({ matches, scoring: { category: 30, location: 20, quantity: 20, urgency: 15, availability: 15 } });
 }));
 
+
+function exchangeView(row) {
+  return {
+    id: row.id, proposerId: row.proposer_id, receiverId: row.receiver_id,
+    offeredResourceId: row.offered_resource_id, requestedResourceId: row.requested_resource_id,
+    message: row.message, status: row.status, createdAt: row.created_at,
+    respondedAt: row.responded_at, handedOverAt: row.handed_over_at, completedAt: row.completed_at,
+    offeredResourceName: row.offered_resource_name, requestedResourceName: row.requested_resource_name,
+    proposerEmail: row.proposer_email, receiverEmail: row.receiver_email
+  };
+}
+async function getExchange(client, exchangeId) {
+  const result = await client.query(
+    "SELECT e.*, offered.name AS offered_resource_name, requested.name AS requested_resource_name, " +
+    "proposer.email AS proposer_email, receiver.email AS receiver_email " +
+    "FROM exchanges e JOIN resources offered ON offered.id = e.offered_resource_id " +
+    "JOIN resources requested ON requested.id = e.requested_resource_id " +
+    "JOIN users proposer ON proposer.id = e.proposer_id " +
+    "JOIN users receiver ON receiver.id = e.receiver_id WHERE e.id = $1",
+    [exchangeId]
+  );
+  return result.rows[0] ? exchangeView(result.rows[0]) : null;
+}
+
+app.get("/api/exchanges", requireAuth, asyncRoute(async (req, res) => {
+  const result = req.user.role === "ADMIN"
+    ? await pool.query("SELECT id FROM exchanges ORDER BY created_at DESC")
+    : await pool.query("SELECT id FROM exchanges WHERE proposer_id = $1 OR receiver_id = $1 ORDER BY created_at DESC", [req.user.id]);
+  const exchanges = [];
+  for (const row of result.rows) exchanges.push(await getExchange(pool, row.id));
+  return res.json({ exchanges, count: exchanges.length });
+}));
+
+app.post("/api/exchanges", requireAuth, asyncRoute(async (req, res) => {
+  const offeredId = idOf(req.body.offeredResourceId || req.body.offered_resource_id);
+  const requestedId = idOf(req.body.requestedResourceId || req.body.requested_resource_id);
+  if (!offeredId || !requestedId || offeredId === requestedId) {
+    return res.status(400).json({ error: "Choose two different valid resources" });
+  }
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const locked = await client.query(
+      "SELECT * FROM resources WHERE id = ANY($1::bigint[]) ORDER BY id FOR UPDATE",
+      [[offeredId, requestedId]]
+    );
+    if (locked.rowCount !== 2) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(404).json({ error: "One or both resources were not found" });
+    }
+    const offered = locked.rows.find(row => String(row.id) === String(offeredId));
+    const requested = locked.rows.find(row => String(row.id) === String(requestedId));
+    if (req.user.role !== "ADMIN" && String(offered.donor_id) !== String(req.user.id)) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(403).json({ error: "You can only offer a resource you own" });
+    }
+    if (String(requested.donor_id) === String(req.user.id)) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(400).json({ error: "Choose another user's resource to request" });
+    }
+    if (offered.status !== "AVAILABLE" || requested.status !== "AVAILABLE") {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(409).json({ error: "Both resources must be available to propose an exchange" });
+    }
+    const created = await client.query(
+      "INSERT INTO exchanges (proposer_id, receiver_id, offered_resource_id, requested_resource_id, message) " +
+      "VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [req.user.id, requested.donor_id, offeredId, requestedId, text(req.body.message).slice(0, 1000)]
+    );
+    await client.query("COMMIT"); finished = true;
+    return res.status(201).json({ exchange: await getExchange(pool, created.rows[0].id) });
+  } catch (error) {
+    if (!finished) await client.query("ROLLBACK");
+    if (error.code === "23505") return res.status(409).json({ error: "An active offer already exists for these resources" });
+    throw error;
+  } finally { client.release(); }
+}));
+
+async function respondToExchange(req, res, action) {
+  const exchangeId = idOf(req.params.id);
+  if (!exchangeId) return res.status(400).json({ error: "Invalid exchange id" });
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const found = await client.query("SELECT * FROM exchanges WHERE id = $1 FOR UPDATE", [exchangeId]);
+    const exchange = found.rows[0];
+    if (!exchange) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(404).json({ error: "Exchange not found" });
+    }
+    if (req.user.role !== "ADMIN" && String(exchange.receiver_id) !== String(req.user.id)) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(403).json({ error: "Only the recipient of this offer can respond" });
+    }
+    if (exchange.status !== "OFFERED") {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(409).json({ error: "This exchange offer is no longer open" });
+    }
+    if (action === "decline") {
+      await client.query("UPDATE exchanges SET status = 'DECLINED', responded_at = NOW() WHERE id = $1", [exchangeId]);
+    } else {
+      const resources = await client.query(
+        "SELECT * FROM resources WHERE id = ANY($1::bigint[]) ORDER BY id FOR UPDATE",
+        [[exchange.offered_resource_id, exchange.requested_resource_id]]
+      );
+      if (resources.rowCount !== 2 || resources.rows.some(item => item.status !== "AVAILABLE")) {
+        await client.query("ROLLBACK"); finished = true;
+        return res.status(409).json({ error: "One or both resources are no longer available" });
+      }
+      await client.query(
+        "UPDATE resources SET status = 'ALLOCATED', updated_at = NOW() WHERE id = ANY($1::bigint[])",
+        [[exchange.offered_resource_id, exchange.requested_resource_id]]
+      );
+      await client.query("UPDATE exchanges SET status = 'ACCEPTED', responded_at = NOW() WHERE id = $1", [exchangeId]);
+    }
+    await client.query("COMMIT"); finished = true;
+    return res.json({ exchange: await getExchange(pool, exchangeId) });
+  } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
+  finally { client.release(); }
+}
+app.put("/api/exchanges/:id/accept", requireAuth, asyncRoute((req, res) => respondToExchange(req, res, "accept")));
+app.put("/api/exchanges/:id/decline", requireAuth, asyncRoute((req, res) => respondToExchange(req, res, "decline")));
+
+async function updateExchangeProgress(req, res, action) {
+  const exchangeId = idOf(req.params.id);
+  if (!exchangeId) return res.status(400).json({ error: "Invalid exchange id" });
+  const client = await pool.connect();
+  let finished = false;
+  try {
+    await client.query("BEGIN");
+    const found = await client.query("SELECT * FROM exchanges WHERE id = $1 FOR UPDATE", [exchangeId]);
+    const exchange = found.rows[0];
+    if (!exchange) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(404).json({ error: "Exchange not found" });
+    }
+    const isParticipant = String(exchange.proposer_id) === String(req.user.id) || String(exchange.receiver_id) === String(req.user.id);
+    if (req.user.role !== "ADMIN" && !isParticipant) {
+      await client.query("ROLLBACK"); finished = true;
+      return res.status(403).json({ error: "Only exchange participants can update its progress" });
+    }
+    if (action === "handover") {
+      if (exchange.status !== "ACCEPTED") {
+        await client.query("ROLLBACK"); finished = true;
+        return res.status(409).json({ error: "Only an accepted exchange can be handed over" });
+      }
+      await client.query(
+        "UPDATE resources SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = ANY($1::bigint[]) AND status = 'ALLOCATED'",
+        [[exchange.offered_resource_id, exchange.requested_resource_id]]
+      );
+      const states = await client.query("SELECT status FROM resources WHERE id = ANY($1::bigint[])", [[exchange.offered_resource_id, exchange.requested_resource_id]]);
+      if (states.rowCount !== 2 || states.rows.some(item => item.status !== "HANDED_OVER")) {
+        await client.query("ROLLBACK"); finished = true;
+        return res.status(409).json({ error: "Both resources must be allocated before handover" });
+      }
+      await client.query("UPDATE exchanges SET status = 'HANDED_OVER', handed_over_at = NOW() WHERE id = $1", [exchangeId]);
+    } else {
+      if (exchange.status !== "HANDED_OVER") {
+        await client.query("ROLLBACK"); finished = true;
+        return res.status(409).json({ error: "Only a handed-over exchange can be completed" });
+      }
+      if (req.user.role !== "ADMIN" && String(exchange.receiver_id) !== String(req.user.id)) {
+        await client.query("ROLLBACK"); finished = true;
+        return res.status(403).json({ error: "Only the recipient can confirm exchange completion" });
+      }
+      await client.query(
+        "UPDATE resources SET status = 'COMPLETED', updated_at = NOW() WHERE id = ANY($1::bigint[]) AND status = 'HANDED_OVER'",
+        [[exchange.offered_resource_id, exchange.requested_resource_id]]
+      );
+      const states = await client.query("SELECT status FROM resources WHERE id = ANY($1::bigint[])", [[exchange.offered_resource_id, exchange.requested_resource_id]]);
+      if (states.rowCount !== 2 || states.rows.some(item => item.status !== "COMPLETED")) {
+        await client.query("ROLLBACK"); finished = true;
+        return res.status(409).json({ error: "Both resources must be handed over before completion" });
+      }
+      await client.query("UPDATE exchanges SET status = 'COMPLETED', completed_at = NOW() WHERE id = $1", [exchangeId]);
+    }
+    await client.query("COMMIT"); finished = true;
+    return res.json({ exchange: await getExchange(pool, exchangeId) });
+  } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
+  finally { client.release(); }
+}
+app.put("/api/exchanges/:id/handover", requireAuth, asyncRoute((req, res) => updateExchangeProgress(req, res, "handover")));
+app.put("/api/exchanges/:id/complete", requireAuth, asyncRoute((req, res) => updateExchangeProgress(req, res, "complete")));
+
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 app.use((error, req, res, next) => {
   console.error(error);
