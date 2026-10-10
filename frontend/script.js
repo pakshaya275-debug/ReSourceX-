@@ -29,7 +29,7 @@ function escapeHtml(str) {
 }
 
 /* ==========================================================================
-   BACKEND API CLIENT (authentication migration — resources remain local for now)
+   BACKEND API CLIENT (API-backed data with explicit error states)
    ========================================================================== */
 const API_BASE_URL = window.RESOURCEX_API_URL || "https://resourcex-hjz9.onrender.com/api";
 const AUTH_TOKEN_KEY = "resourceXAuthToken";
@@ -429,7 +429,7 @@ async function renderDonorRequests() {
     const badgeEl = document.getElementById("donorPendingRequestsBadge");
     if (!requestsTableBody && !badgeEl) return;
 
-    if (getAuthToken() && getCurrentUser()?.role === "DONOR") {
+    if (getAuthToken()) {
         try {
             const data = await apiRequest("/requests");
             const requests = data.requests || [];
@@ -457,6 +457,11 @@ async function renderDonorRequests() {
             return;
         } catch (error) {
             console.error("Unable to load donor requests", error);
+            if (badgeEl) badgeEl.textContent = "Unavailable";
+            if (requestsTableBody) {
+                requestsTableBody.innerHTML = `<tr><td colspan="6" class="empty-table-cell">Unable to load requests from the server. Please check your connection and try again.</td></tr>`;
+            }
+            return;
         }
     }
 
@@ -916,7 +921,7 @@ async function renderRecipientRequests() {
     const countEl = document.getElementById("recipientRequestCount");
     if (!tableBody) return;
 
-    if (getAuthToken() && getCurrentUser()?.role === "RECIPIENT") {
+    if (getAuthToken()) {
         try {
             const data = await apiRequest("/requests");
             const requests = data.requests || [];
@@ -938,6 +943,9 @@ async function renderRecipientRequests() {
             return;
         } catch (error) {
             console.error("Unable to load recipient requests", error);
+            if (countEl) countEl.textContent = "Unavailable";
+            tableBody.innerHTML = `<tr><td colspan="5" class="empty-table-cell">Unable to load your requests from the server. Please check your connection and try again.</td></tr>`;
+            return;
         }
     }
 
