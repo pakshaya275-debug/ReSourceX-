@@ -114,6 +114,7 @@ app.post("/api/auth/register", asyncRoute(async (req, res) => {
   const password = String(req.body.password || "");
   const userRole = role(req.body.role || "RECIPIENT");
   if (!firstName || !lastName || !email || !password) return res.status(400).json({ error: "firstName, lastName, email, and password are required" });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "Enter a valid email address" });
   if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
   if (!["DONOR", "RECIPIENT", "ADMIN"].includes(userRole)) return res.status(400).json({ error: "Role must be DONOR or RECIPIENT" });
   if (userRole === "ADMIN" && (!process.env.ADMIN_REGISTRATION_CODE || req.body.adminCode !== process.env.ADMIN_REGISTRATION_CODE)) return res.status(403).json({ error: "An administrator registration code is required" });
