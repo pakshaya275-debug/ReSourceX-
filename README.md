@@ -390,6 +390,33 @@ Use pilot feedback to improve:
 
 Only after these improvements should ReSourceX be considered for broader public use.
 
+## Resource Exchange API (new)
+
+The backend now includes the first API layer for resource-for-resource exchange. This is separate from donation requests, and the frontend exchange screens are not wired up yet.
+
+### Database setup
+
+After applying the core schema, run the migration once against the same PostgreSQL database used by the backend:
+
+```bash
+psql "$DATABASE_URL" -f backend/migrations/001_create_exchanges.sql
+```
+
+For local PostgreSQL, use your local connection settings instead of `DATABASE_URL`. Do not commit database passwords or `.env` files.
+
+### Endpoints
+
+All endpoints require a valid Bearer token.
+
+- `GET /api/exchanges` — list offers involving the signed-in user (admins can view all).
+- `POST /api/exchanges` — create an offer using `offeredResourceId`, `requestedResourceId`, and optional `message`.
+- `PUT /api/exchanges/:id/accept` — the offer recipient accepts; both resources are reserved.
+- `PUT /api/exchanges/:id/decline` — the offer recipient declines.
+- `PUT /api/exchanges/:id/handover` — mark both reserved resources as handed over.
+- `PUT /api/exchanges/:id/complete` — the offer recipient confirms completion.
+
+The resources must both be available when an offer is created and again when it is accepted. A stale offer can therefore fail to accept if either resource has since become unavailable. API and database migration changes are committed, but the exchange flow still needs integration tests and frontend UI before it is ready for a user-facing demo.
+
 ## Project Positioning
 
 ReSourceX is currently best described as a **working full-stack MVP for demonstration and pilot testing**.
