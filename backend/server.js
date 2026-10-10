@@ -5,6 +5,7 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
+const { initExchangesRouter } = require("./routes/exchanges");
 
 const app = express();
 const port = Number(process.env.PORT || 5000);
@@ -31,6 +32,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: "1mb" }));
+
+// Initialize exchanges router
+const exchangesRouter = initExchangesRouter({ pool, requireAuth, requireRole });
+app.use("/api/exchanges", exchangesRouter);
 
 const asyncRoute = handler => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 const role = value => String(value || "").trim().toUpperCase();
