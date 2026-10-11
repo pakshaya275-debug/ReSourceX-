@@ -202,6 +202,8 @@ GET    /api/health
 POST   /api/auth/register
 POST   /api/auth/login
 GET    /api/auth/me
+GET    /api/profile
+PUT    /api/profile/location-privacy
 
 GET    /api/resources
 GET    /api/resources/:id
@@ -417,7 +419,7 @@ All exchange endpoints require a valid Bearer token.
 - `PUT /api/exchanges/:id/complete` — confirm receipt; completion occurs only after both participants confirm.
 - `GET /api/exchanges/:id/messages` and `POST /api/exchanges/:id/messages` — read or send participant-only messages.
 
-Resource rows are locked in ID order during exchange mutations. Acceptance rechecks availability and quantity and reserves both resources. Pickup location is hidden until acceptance, and coordinates are shared only when the resource owner's privacy setting is `exact`. The exchange API has not yet been verified end-to-end against a live PostgreSQL instance; apply migrations on a backup/staging database and finish the test checklist before production use.
+Resource rows are locked in ID order during exchange mutations. Acceptance rechecks availability and quantity and reserves both resources. Pickup location is hidden from public resource listings. For accepted transactions, an exact pickup location is shared only when the resource owner's privacy setting is `exact`; users can change that setting from the exchange page. Approximate/none settings keep the saved pickup location hidden. The exchange API has not yet been verified end-to-end against a live PostgreSQL instance; apply migrations on a backup/staging database and finish the test checklist before production use.
 
 ## Project Positioning
 
