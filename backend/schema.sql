@@ -122,8 +122,7 @@ CREATE TABLE IF NOT EXISTS exchange_resources (
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   quantity_fulfilled INTEGER NOT NULL DEFAULT 0 CHECK (quantity_fulfilled >= 0 AND quantity_fulfilled <= quantity),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT exchange_resources_unique_side UNIQUE (exchange_id, side),
-  CONSTRAINT exchange_resources_unique_resource UNIQUE (exchange_id, resource_id)
+  CONSTRAINT exchange_resources_unique_side UNIQUE (exchange_id, side)
 );
 
 CREATE INDEX IF NOT EXISTS exchange_resources_exchange_id_idx ON exchange_resources (exchange_id);
