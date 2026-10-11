@@ -68,7 +68,8 @@ const requestView = (row, viewerId) => ({
   } : undefined,
   recipient: row.recipient_email ? {
     id: row.recipient_id, firstName: row.recipient_first_name,
-    lastName: row.recipient_last_name, email: row.recipient_email
+    lastName: row.recipient_last_name,
+    ...(["APPROVED", "HANDED_OVER", "COMPLETED"].includes(row.status) ? { email: row.recipient_email } : {})
   } : undefined
 });
 
