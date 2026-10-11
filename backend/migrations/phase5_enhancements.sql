@@ -204,6 +204,14 @@ CREATE INDEX IF NOT EXISTS messages_exchange_id_idx ON messages (exchange_id, se
 CREATE INDEX IF NOT EXISTS messages_request_id_idx ON messages (request_id, sent_at);
 CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id, sent_at);
 
+-- Replace the earlier permissive constraint if this migration was previously applied.
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_exchange_or_request_check;
+ALTER TABLE messages ADD CONSTRAINT messages_exchange_or_request_check
+  CHECK (
+    (exchange_id IS NOT NULL AND request_id IS NULL)
+    OR (exchange_id IS NULL AND request_id IS NOT NULL)
+  ) NOT VALID;
+
 -- =====================================================================
 -- 6. RESOURCE HISTORY — audit trail for traceability
 -- =====================================================================
