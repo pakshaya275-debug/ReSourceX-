@@ -309,9 +309,10 @@ app.get("/api/requests", requireAuth, asyncRoute(async (req, res) => {
   const result = await pool.query(
     "SELECT q.id, q.resource_id, q.recipient_id, q.status, q.urgency, q.purpose, q.requested_at, q.reviewed_at, q.handed_over_at, q.completed_at, " +
     "r.name AS resource_name, r.category AS resource_category, r.quantity AS resource_quantity, " +
-    "r.location AS resource_location, r.status AS resource_status, r.donor_id, " +
+    "r.location AS resource_location, r.status AS resource_status, r.donor_id, owner.location_privacy AS resource_location_privacy, " +
     "u.first_name AS recipient_first_name, u.last_name AS recipient_last_name, u.email AS recipient_email " +
     "FROM requests q JOIN resources r ON r.id = q.resource_id JOIN users u ON u.id = q.recipient_id " +
+    "JOIN users owner ON owner.id = r.donor_id " +
     "WHERE " + conditions.join(" AND ") + " ORDER BY q.requested_at DESC", params
   );
   return res.json({ requests: result.rows.map(item => requestView(item, req.user.id)), count: result.rowCount });
