@@ -765,7 +765,7 @@ function initAddResource() {
                     }
                 });
                 alert("🎉 Resource added successfully!");
-                window.location.href = "donor_dashboard.html";
+                window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "recipient_dashboard.html" : "donor_dashboard.html";
                 return;
             } catch (error) {
                 if (submitButton) submitButton.disabled = false;
@@ -793,7 +793,7 @@ function initAddResource() {
         saveResources(resources);
 
         alert("🎉 Resource added successfully!");
-        window.location.href = "donor_dashboard.html";
+        window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "recipient_dashboard.html" : "donor_dashboard.html";
     });
 }
 
