@@ -393,7 +393,7 @@ async function markHandedOver(req, res) {
     await client.query("UPDATE requests SET status = 'HANDED_OVER', handed_over_at = NOW() WHERE id = $1", [requestId]);
     await client.query("UPDATE resources SET status = 'HANDED_OVER', updated_at = NOW() WHERE id = $1", [request.resource_id]);
     await client.query("COMMIT"); finished = true;
-    return res.json({ request: requestView(await getRequest(pool, requestId)) });
+    return res.json({ request: requestView(await getRequest(pool, requestId), req.user.id) });
   } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
   finally { client.release(); }
 }
@@ -416,7 +416,7 @@ async function confirmReceived(req, res) {
     await client.query("UPDATE requests SET status = 'COMPLETED', completed_at = NOW() WHERE id = $1", [requestId]);
     await client.query("UPDATE resources SET status = 'COMPLETED', updated_at = NOW() WHERE id = $1", [request.resource_id]);
     await client.query("COMMIT"); finished = true;
-    return res.json({ request: requestView(await getRequest(pool, requestId)) });
+    return res.json({ request: requestView(await getRequest(pool, requestId), req.user.id) });
   } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
   finally { client.release(); }
 }
