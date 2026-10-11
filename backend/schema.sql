@@ -165,7 +165,6 @@ CREATE TABLE IF NOT EXISTS messages (
     CHECK (
       (exchange_id IS NOT NULL AND request_id IS NULL)
       OR (exchange_id IS NULL AND request_id IS NOT NULL)
-      OR (exchange_id IS NULL AND request_id IS NOT NULL)
     )
 );
 
