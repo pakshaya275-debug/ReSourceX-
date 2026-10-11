@@ -396,26 +396,27 @@ The backend now includes the first API layer for resource-for-resource exchange.
 
 ### Database setup
 
-After applying the core schema, run the migration once against the same PostgreSQL database used by the backend:
+For a new database, initialize it with `backend/schema.sql` only. For an existing v1 database, back up the database first, then apply the additive upgrade migration once:
 
 ```bash
-psql "$DATABASE_URL" -f backend/migrations/001_create_exchanges.sql
+psql "$DATABASE_URL" -f backend/migrations/phase5_enhancements.sql
 ```
 
-For local PostgreSQL, use your local connection settings instead of `DATABASE_URL`. Do not commit database passwords or `.env` files.
+The upgrade migration is designed to convert the old denormalized exchange table into the current normalized exchange model and preserve existing resource links. Do not run the old `001_create_exchanges.sql` separately on a fresh v2 schema. Never commit database passwords or `.env` files.
 
 ### Endpoints
 
-All endpoints require a valid Bearer token.
+All exchange endpoints require a valid Bearer token.
 
-- `GET /api/exchanges` — list offers involving the signed-in user (admins can view all).
-- `POST /api/exchanges` — create an offer using `offeredResourceId`, `requestedResourceId`, and optional `message`.
-- `PUT /api/exchanges/:id/accept` — the offer recipient accepts; both resources are reserved.
-- `PUT /api/exchanges/:id/decline` — the offer recipient declines.
-- `PUT /api/exchanges/:id/handover` — mark both reserved resources as handed over.
-- `PUT /api/exchanges/:id/complete` — the offer recipient confirms completion.
+- `GET /api/exchanges` — list exchanges visible to the signed-in user (admins can view all).
+- `POST /api/exchanges` — propose an exchange with resource IDs, quantities, recipient ID, and optional message.
+- `PUT /api/exchanges/:id/respond` — accept, decline, or counteroffer.
+- `PUT /api/exchanges/:id/cancel` — cancel a proposal before acceptance.
+- `PUT /api/exchanges/:id/progress` — confirm your side of the physical handover.
+- `PUT /api/exchanges/:id/complete` — confirm receipt; completion occurs only after both participants confirm.
+- `GET /api/exchanges/:id/messages` and `POST /api/exchanges/:id/messages` — read or send participant-only messages.
 
-The resources must both be available when an offer is created and again when it is accepted. A stale offer can therefore fail to accept if either resource has since become unavailable. API and database migration changes are committed, but the exchange flow still needs integration tests and frontend UI before it is ready for a user-facing demo.
+Resource rows are locked in ID order during exchange mutations. Acceptance rechecks availability and quantity and reserves both resources. Pickup location is hidden until acceptance, and coordinates are shared only when the resource owner's privacy setting is `exact`. The exchange API has not yet been verified end-to-end against a live PostgreSQL instance; apply migrations on a backup/staging database and finish the test checklist before production use.
 
 ## Project Positioning
 
