@@ -132,6 +132,7 @@ ReSourceX/
 │   ├── add_resource.html
 │   ├── resource_details.html
 │   ├── request_confirmation.html
+│   ├── exchanges.html
 │   ├── script.js
 │   └── style.css
 ├── backend/
@@ -392,7 +393,7 @@ Only after these improvements should ReSourceX be considered for broader public 
 
 ## Resource Exchange API (new)
 
-The backend now includes the first API layer for resource-for-resource exchange. This is separate from donation requests, and the frontend exchange screens are not wired up yet.
+ReSourceX now includes a dedicated exchange page linked from the donor and recipient dashboards. It supports proposals, counteroffers, accept/decline, cancellation, participant messages, two-party handover confirmation, and two-party receipt confirmation. The UI and API have been statically checked, but still need end-to-end verification against PostgreSQL.
 
 ### Database setup
 
