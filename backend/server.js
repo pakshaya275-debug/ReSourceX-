@@ -228,8 +228,8 @@ app.get("/api/resources/:id", requireAuth, asyncRoute(async (req, res) => {
   const resourceId = idOf(req.params.id);
   if (!resourceId) return res.status(400).json({ error: "Invalid resource id" });
 
-  // Match the visibility rules used by the resource list: recipients only see
-  // available resources, and donors only see resources they own.
+  // Match the visibility rules used by the resource list: users can see their own
+  // resources, while other users see only available resources.
   const result = req.user.role === "ADMIN"
     ? await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE r.id = $1", [resourceId])
     : req.user.role === "DONOR"
@@ -286,7 +286,7 @@ app.delete("/api/resources/:id", requireAuth, requireRole("DONOR", "RECIPIENT", 
   const existing = await pool.query("SELECT donor_id, status FROM resources WHERE id = $1", [resourceId]);
   if (!existing.rows[0]) return res.status(404).json({ error: "Resource not found" });
   if (req.user.role !== "ADMIN" && String(existing.rows[0].donor_id) !== String(req.user.id)) return res.status(403).json({ error: "You can only delete your own resources" });
-  if (existing.rows[0].status === "ALLOCATED") return res.status(409).json({ error: "Allocated resources cannot be deleted" });
+  if (["ALLOCATED", "HANDED_OVER", "COMPLETED"].includes(existing.rows[0].status)) return res.status(409).json({ error: "Allocated or completed resources cannot be deleted" });
   const activeExchange = await pool.query(
     "SELECT 1 FROM exchange_resources er JOIN exchanges e ON e.id = er.exchange_id " +
     "WHERE er.resource_id = $1 AND e.status IN ('PROPOSED', 'COUNTERED', 'ACCEPTED', 'IN_PROGRESS') LIMIT 1",
