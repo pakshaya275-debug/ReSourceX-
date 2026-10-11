@@ -199,7 +199,10 @@ app.get("/api/resources", requireAuth, asyncRoute(async (req, res) => {
   const params = [];
   const conditions = ["1 = 1"];
   const param = value => { params.push(value); return "$" + params.length; };
-  if (req.user.role === "DONOR") conditions.push("r.donor_id = " + param(req.user.id));
+  if (req.user.role === "DONOR") {
+    if (req.query.marketplace === "true") conditions.push("(r.status = 'AVAILABLE' OR r.donor_id = " + param(req.user.id) + ")");
+    else conditions.push("r.donor_id = " + param(req.user.id));
+  }
   if (req.user.role === "RECIPIENT") conditions.push("(r.status = 'AVAILABLE' OR r.donor_id = " + param(req.user.id) + ")");
   if (req.query.status && req.user.role !== "RECIPIENT") {
     const requestedStatus = status(req.query.status);
