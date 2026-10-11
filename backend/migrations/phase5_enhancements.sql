@@ -140,9 +140,9 @@ CREATE TABLE IF NOT EXISTS exchange_resources (
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   quantity_fulfilled INTEGER NOT NULL DEFAULT 0 CHECK (quantity_fulfilled >= 0 AND quantity_fulfilled <= quantity),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT exchange_resources_unique_side UNIQUE (exchange_id, side),
-  CONSTRAINT exchange_resources_unique_resource UNIQUE (exchange_id, resource_id)
+  CONSTRAINT exchange_resources_unique_side UNIQUE (exchange_id, side)
 );
+ALTER TABLE exchange_resources DROP CONSTRAINT IF EXISTS exchange_resources_unique_resource;
 CREATE INDEX IF NOT EXISTS exchange_resources_exchange_id_idx ON exchange_resources (exchange_id);
 CREATE INDEX IF NOT EXISTS exchange_resources_resource_id_idx ON exchange_resources (resource_id);
 
@@ -208,5 +208,3 @@ CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id, sent_a
 -- 6. RESOURCE HISTORY — audit trail for traceability
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS resource_history (
-  id BIGSERIAL PRIMARY KEY,
-  resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
