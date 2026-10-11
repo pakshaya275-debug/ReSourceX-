@@ -32,6 +32,14 @@
   </header>
   <div id="pageAlert" class="exchange-alert" role="status" aria-live="polite"></div>
   <section class="exchange-panel">
+    <h2>Location privacy</h2>
+    <p class="muted">Exact pickup location is shared with exchange participants only after acceptance and only when you choose “Exact”. “Approximate” and “None” keep the saved location hidden; use participant messaging to coordinate pickup.</p>
+    <div class="exchange-form" style="margin-top:14px">
+      <div class="form-group"><label for="locationPrivacy">Your location sharing setting</label><select id="locationPrivacy"><option value="approximate">Approximate (hidden until you share it in messages)</option><option value="exact">Exact (share after acceptance)</option><option value="none">None (keep hidden)</option></select></div>
+      <div class="form-group" style="justify-content:end"><button type="button" id="savePrivacy">Save privacy setting</button></div>
+    </div>
+  </section>
+  <section class="exchange-panel">
     <h2 id="formHeading">Propose an exchange</h2>
     <p class="muted" id="formIntro">Choose one of your available resources and an available resource owned by another participant.</p>
     <form class="exchange-form" id="exchangeForm">
@@ -77,6 +85,22 @@
   function setOptions(select, resources, placeholder) {
     select.innerHTML='<option value="">'+escapeHtml(placeholder)+'</option>'+resources.map(r=>'<option value="'+escapeHtml(r.id)+'">'+escapeHtml(resourceLabel(r))+'</option>').join("");
   }
+  async function loadPrivacy() {
+    const data = await api("/profile");
+    $("locationPrivacy").value = data.profile?.locationPrivacy || "approximate";
+  }
+  $("savePrivacy").addEventListener("click", async () => {
+    const button = $("savePrivacy");
+    button.disabled = true;
+    try {
+      const data = await api("/profile/location-privacy", { method: "PUT", body: { locationPrivacy: $("locationPrivacy").value } });
+      alertMessage("Location privacy saved: " + data.locationPrivacy + ".", "success");
+    } catch (error) {
+      alertMessage(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
   async function loadResources(requestedOwner=null) {
     const data=await api("/resources?marketplace=true&limit=100");
     allResources=data.resources||[];
@@ -198,6 +222,7 @@
     const role=String(user.role||"").toUpperCase();
     if(!["DONOR","RECIPIENT"].includes(role)){window.location.href=role==="ADMIN"?"admin_dashboard.html":"index.html";return;}
     $("dashboardLink").href=role==="DONOR"?"donor_dashboard.html":"recipient_dashboard.html";
+    try{await loadPrivacy();}catch(e){console.error("Unable to load location privacy setting",e);}
     try{await loadResources();await loadExchanges();}
     catch(e){alertMessage(e.message);}
   }
