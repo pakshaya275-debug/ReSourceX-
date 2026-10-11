@@ -200,7 +200,7 @@ app.get("/api/resources", requireAuth, asyncRoute(async (req, res) => {
   const conditions = ["1 = 1"];
   const param = value => { params.push(value); return "$" + params.length; };
   if (req.user.role === "DONOR") conditions.push("r.donor_id = " + param(req.user.id));
-  if (req.user.role === "RECIPIENT") conditions.push("r.status = 'AVAILABLE'");
+  if (req.user.role === "RECIPIENT") conditions.push("(r.status = 'AVAILABLE' OR r.donor_id = " + param(req.user.id) + ")");
   if (req.query.status && req.user.role !== "RECIPIENT") {
     const requestedStatus = status(req.query.status);
     if (["AVAILABLE", "REQUESTED", "ALLOCATED"].includes(requestedStatus)) conditions.push("r.status = " + param(requestedStatus));
@@ -230,13 +230,13 @@ app.get("/api/resources/:id", requireAuth, asyncRoute(async (req, res) => {
     ? await pool.query("SELECT * FROM resources WHERE id = $1", [resourceId])
     : req.user.role === "DONOR"
       ? await pool.query("SELECT * FROM resources WHERE id = $1 AND donor_id = $2", [resourceId, req.user.id])
-      : await pool.query("SELECT * FROM resources WHERE id = $1 AND status = 'AVAILABLE'", [resourceId]);
+      : await pool.query("SELECT * FROM resources WHERE id = $1 AND (status = 'AVAILABLE' OR donor_id = $2)", [resourceId, req.user.id]);
 
   if (!result.rows[0]) return res.status(404).json({ error: "Resource not found" });
   return res.json({ resource: resourceView(result.rows[0]) });
 }));
 
-app.post("/api/resources", requireAuth, requireRole("DONOR", "ADMIN"), asyncRoute(async (req, res) => {
+app.post("/api/resources", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
   const name = text(req.body.name);
   const category = text(req.body.category);
   const quantity = positiveInt(req.body.quantity);
@@ -249,13 +249,19 @@ app.post("/api/resources", requireAuth, requireRole("DONOR", "ADMIN"), asyncRout
   return res.status(201).json({ resource: resourceView(result.rows[0]) });
 }));
 
-app.put("/api/resources/:id", requireAuth, requireRole("DONOR", "ADMIN"), asyncRoute(async (req, res) => {
+app.put("/api/resources/:id", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
   const resourceId = idOf(req.params.id);
   if (!resourceId) return res.status(400).json({ error: "Invalid resource id" });
   const existing = await pool.query("SELECT * FROM resources WHERE id = $1", [resourceId]);
   if (!existing.rows[0]) return res.status(404).json({ error: "Resource not found" });
-  if (req.user.role === "DONOR" && existing.rows[0].donor_id !== req.user.id) return res.status(403).json({ error: "You can only edit your own resources" });
+  if (req.user.role !== "ADMIN" && String(existing.rows[0].donor_id) !== String(req.user.id)) return res.status(403).json({ error: "You can only edit your own resources" });
   if (existing.rows[0].status === "ALLOCATED") return res.status(409).json({ error: "Allocated resources cannot be edited" });
+  const activeExchange = await pool.query(
+    "SELECT 1 FROM exchange_resources er JOIN exchanges e ON e.id = er.exchange_id " +
+    "WHERE er.resource_id = $1 AND e.status IN ('PROPOSED', 'COUNTERED', 'ACCEPTED', 'IN_PROGRESS') LIMIT 1",
+    [resourceId]
+  );
+  if (activeExchange.rowCount) return res.status(409).json({ error: "Resources in an active exchange cannot be edited" });
   const fields = ["name", "category", "quantity", "condition", "location", "availability", "description", "specifications"];
   const updates = [];
   const values = [];
@@ -270,13 +276,19 @@ app.put("/api/resources/:id", requireAuth, requireRole("DONOR", "ADMIN"), asyncR
   return res.json({ resource: resourceView(result.rows[0]) });
 }));
 
-app.delete("/api/resources/:id", requireAuth, requireRole("DONOR", "ADMIN"), asyncRoute(async (req, res) => {
+app.delete("/api/resources/:id", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
   const resourceId = idOf(req.params.id);
   if (!resourceId) return res.status(400).json({ error: "Invalid resource id" });
   const existing = await pool.query("SELECT donor_id, status FROM resources WHERE id = $1", [resourceId]);
   if (!existing.rows[0]) return res.status(404).json({ error: "Resource not found" });
-  if (req.user.role === "DONOR" && existing.rows[0].donor_id !== req.user.id) return res.status(403).json({ error: "You can only delete your own resources" });
+  if (req.user.role !== "ADMIN" && String(existing.rows[0].donor_id) !== String(req.user.id)) return res.status(403).json({ error: "You can only delete your own resources" });
   if (existing.rows[0].status === "ALLOCATED") return res.status(409).json({ error: "Allocated resources cannot be deleted" });
+  const activeExchange = await pool.query(
+    "SELECT 1 FROM exchange_resources er JOIN exchanges e ON e.id = er.exchange_id " +
+    "WHERE er.resource_id = $1 AND e.status IN ('PROPOSED', 'COUNTERED', 'ACCEPTED', 'IN_PROGRESS') LIMIT 1",
+    [resourceId]
+  );
+  if (activeExchange.rowCount) return res.status(409).json({ error: "Resources in an active exchange cannot be deleted" });
   await pool.query("DELETE FROM resources WHERE id = $1", [resourceId]);
   return res.status(204).send();
 }));
