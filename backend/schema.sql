@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone_number VARCHAR(20),
   latitude DOUBLE PRECISION,
   longitude DOUBLE PRECISION,
-  location_privacy VARCHAR(20) NOT NULL DEFAULT 'APPROXIMATE'
+  location_privacy VARCHAR(20) NOT NULL DEFAULT 'approximate'
     CHECK (location_privacy IN ('exact', 'approximate', 'none')),
   organisation_verified BOOLEAN NOT NULL DEFAULT FALSE,
   profile_picture_url TEXT,
@@ -94,14 +94,19 @@ CREATE TABLE IF NOT EXISTS exchanges (
   id BIGSERIAL PRIMARY KEY,
   initiator_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   recipient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  current_proposer_id BIGINT NOT NULL REFERENCES users(id),
   status VARCHAR(20) NOT NULL DEFAULT 'PROPOSED'
     CHECK (status IN ('PROPOSED', 'COUNTERED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'DECLINED', 'CANCELLED')),
-  message TEXT,
+  message TEXT NOT NULL DEFAULT '',
   proposed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   responded_at TIMESTAMPTZ,
   accepted_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
   cancelled_at TIMESTAMPTZ,
+  initiator_handover_at TIMESTAMPTZ,
+  recipient_handover_at TIMESTAMPTZ,
+  initiator_completed_at TIMESTAMPTZ,
+  recipient_completed_at TIMESTAMPTZ,
   CONSTRAINT exchanges_initiator_recipient_check CHECK (initiator_id <> recipient_id)
 );
 
@@ -109,33 +114,20 @@ CREATE INDEX IF NOT EXISTS exchanges_initiator_id_idx ON exchanges (initiator_id
 CREATE INDEX IF NOT EXISTS exchanges_recipient_id_idx ON exchanges (recipient_id);
 CREATE INDEX IF NOT EXISTS exchanges_status_idx ON exchanges (status);
 
--- Resources involved in an exchange (offered → requested)
 CREATE TABLE IF NOT EXISTS exchange_resources (
   id BIGSERIAL PRIMARY KEY,
   exchange_id BIGINT NOT NULL REFERENCES exchanges(id) ON DELETE CASCADE,
-  side VARCHAR(10) NOT NULL
-    CHECK (side IN ('offered', 'requested')),
-  resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  side VARCHAR(10) NOT NULL CHECK (side IN ('offered', 'requested')),
+  resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE RESTRICT,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
-  quantity_fulfilled INTEGER NOT NULL DEFAULT 0
-    CHECK (quantity_fulfilled >= 0 AND quantity_fulfilled <= quantity),
+  quantity_fulfilled INTEGER NOT NULL DEFAULT 0 CHECK (quantity_fulfilled >= 0 AND quantity_fulfilled <= quantity),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  -- Prevent the same resource from appearing twice in a single exchange
-  CONSTRAINT exchange_resources_unique_side UNIQUE (exchange_id, side)
+  CONSTRAINT exchange_resources_unique_side UNIQUE (exchange_id, side),
+  CONSTRAINT exchange_resources_unique_resource UNIQUE (exchange_id, resource_id)
 );
 
 CREATE INDEX IF NOT EXISTS exchange_resources_exchange_id_idx ON exchange_resources (exchange_id);
 CREATE INDEX IF NOT EXISTS exchange_resources_resource_id_idx ON exchange_resources (resource_id);
-
--- Prevent double allocation of a resource across active exchanges
-CREATE UNIQUE INDEX IF NOT EXISTS exchange_resources_active_unique
-  ON exchange_resources (resource_id)
-  WHERE resource_id IN (
-    SELECT er.resource_id
-    FROM exchange_resources er
-    JOIN exchanges e ON e.id = er.exchange_id
-    WHERE e.status IN ('PROPOSED', 'COUNTERED', 'ACCEPTED', 'IN_PROGRESS')
-  );
 
 -- =====================================================================
 -- NOTIFICATIONS (persistent in-app notification centre)
@@ -173,7 +165,7 @@ CREATE TABLE IF NOT EXISTS messages (
     CHECK (
       (exchange_id IS NOT NULL AND request_id IS NULL)
       OR (exchange_id IS NULL AND request_id IS NOT NULL)
-      OR (exchange_id IS NULL AND request_id IS NULL)
+      OR (exchange_id IS NULL AND request_id IS NOT NULL)
     )
 );
 
@@ -211,8 +203,6 @@ CREATE TABLE IF NOT EXISTS organisation_verifications (
   expires_at DATE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS organisation_verifications_user_unique
-  ON organisation_verifications (user_id)
-  WHERE expires_at IS NULL OR expires_at > CURRENT_DATE;
+CREATE INDEX IF NOT EXISTS organisation_verifications_user_idx ON organisation_verifications (user_id);
 
 CREATE INDEX IF NOT EXISTS organisation_verifications_verified_idx ON organisation_verifications (verified_at DESC);
