@@ -151,9 +151,17 @@ function initExchangesRouter({ pool, requireAuth, requireRole }) {
       await c.query("UPDATE exchanges SET "+col+"=COALESCE("+col+",NOW()) WHERE id=$1",[req.exchangeId]);
       const state=await c.query("SELECT initiator_completed_at,recipient_completed_at FROM exchanges WHERE id=$1",[req.exchangeId]);
       if(state.rows[0].initiator_completed_at&&state.rows[0].recipient_completed_at){
-        const ids=await c.query("SELECT resource_id FROM exchange_resources WHERE exchange_id=$1",[req.exchangeId]);
-        const changed=await c.query("UPDATE resources SET status='COMPLETED',updated_at=NOW() WHERE id=ANY($1::bigint[]) AND status='HANDED_OVER'",[ids.rows.map(r=>r.resource_id)]);
-        if(changed.rowCount!==2)throw new Error("Exchange resource states changed unexpectedly during completion");
+        const items=await c.query("SELECT resource_id,quantity FROM exchange_resources WHERE exchange_id=$1",[req.exchangeId]);
+        if(items.rowCount!==2)throw new Error("Exchange must contain exactly two resource sides");
+        for(const item of items.rows){
+          const changed=await c.query(
+            "UPDATE resources SET quantity=CASE WHEN quantity > $2 THEN quantity-$2 ELSE quantity END, " +
+            "status=CASE WHEN quantity > $2 THEN 'AVAILABLE' ELSE 'COMPLETED' END, updated_at=NOW() " +
+            "WHERE id=$1 AND status='HANDED_OVER' AND quantity >= $2",
+            [item.resource_id,item.quantity]
+          );
+          if(changed.rowCount!==1)throw new Error("Exchange resource quantity or state changed unexpectedly during completion");
+        }
         await c.query("UPDATE exchanges SET status='COMPLETED',completed_at=NOW() WHERE id=$1",[req.exchangeId]);
       }
       await c.query("COMMIT");done=true;const other=String(e.initiator_id)===String(req.user.id)?e.recipient_id:e.initiator_id;
