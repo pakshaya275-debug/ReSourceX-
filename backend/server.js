@@ -48,21 +48,22 @@ const userView = row => ({
   id: row.id, firstName: row.first_name, lastName: row.last_name,
   email: row.email, role: row.role, createdAt: row.created_at
 });
-const resourceView = row => ({
+const resourceView = (row, viewerId) => ({
   id: row.id, donorId: row.donor_id, name: row.name, category: row.category,
-  quantity: row.quantity, condition: row.condition, location: row.location,
+  quantity: row.quantity, condition: row.condition,
+  location: String(row.donor_id) === String(viewerId) || row.location_privacy === "exact" ? row.location : null,
   availability: row.availability, description: row.description,
   specifications: row.specifications, status: row.status,
   createdAt: row.created_at, updatedAt: row.updated_at
 });
-const requestView = row => ({
+const requestView = (row, viewerId) => ({
   id: row.id, resourceId: row.resource_id, recipientId: row.recipient_id,
   status: row.status, urgency: row.urgency, purpose: row.purpose,
   requestedAt: row.requested_at, reviewedAt: row.reviewed_at,
   handedOverAt: row.handed_over_at, completedAt: row.completed_at,
   resource: row.resource_name ? {
     id: row.resource_id, name: row.resource_name, category: row.resource_category,
-    quantity: row.resource_quantity, location: row.resource_location,
+    quantity: row.resource_quantity, location: String(row.donor_id) === String(viewerId) || row.resource_location_privacy === "exact" ? row.resource_location : null,
     status: row.resource_status, donorId: row.donor_id
   } : undefined,
   recipient: row.recipient_email ? {
@@ -99,10 +100,10 @@ async function getRequest(client, requestId) {
     "SELECT q.id, q.resource_id, q.recipient_id, q.status, q.urgency, q.purpose, " +
     "q.requested_at, q.reviewed_at, q.handed_over_at, q.completed_at, r.name AS resource_name, " +
     "r.category AS resource_category, r.quantity AS resource_quantity, " +
-    "r.location AS resource_location, r.status AS resource_status, r.donor_id, " +
+    "r.location AS resource_location, r.status AS resource_status, r.donor_id, owner.location_privacy AS resource_location_privacy, " +
     "u.first_name AS recipient_first_name, u.last_name AS recipient_last_name, " +
     "u.email AS recipient_email FROM requests q JOIN resources r ON r.id = q.resource_id " +
-    "JOIN users u ON u.id = q.recipient_id WHERE q.id = $1", [requestId]
+    "JOIN users u ON u.id = q.recipient_id JOIN users owner ON owner.id = r.donor_id WHERE q.id = $1", [requestId]
   );
   return result.rows[0] || null;
 }
@@ -217,10 +218,10 @@ app.get("/api/resources", requireAuth, asyncRoute(async (req, res) => {
   const offset = Number.isInteger(Number(req.query.offset)) && Number(req.query.offset) >= 0 ? Number(req.query.offset) : 0;
   params.push(limit, offset);
   const result = await pool.query(
-    "SELECT r.* FROM resources r WHERE " + conditions.join(" AND ") +
+    "SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE " + conditions.join(" AND ") +
     " ORDER BY r.created_at DESC LIMIT $" + (params.length - 1) + " OFFSET $" + params.length, params
   );
-  return res.json({ resources: result.rows.map(resourceView), count: result.rowCount });
+  return res.json({ resources: result.rows.map(item => resourceView(item, req.user.id)), count: result.rowCount });
 }));
 
 app.get("/api/resources/:id", requireAuth, asyncRoute(async (req, res) => {
@@ -230,13 +231,13 @@ app.get("/api/resources/:id", requireAuth, asyncRoute(async (req, res) => {
   // Match the visibility rules used by the resource list: recipients only see
   // available resources, and donors only see resources they own.
   const result = req.user.role === "ADMIN"
-    ? await pool.query("SELECT * FROM resources WHERE id = $1", [resourceId])
+    ? await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE r.id = $1", [resourceId])
     : req.user.role === "DONOR"
-      ? await pool.query("SELECT * FROM resources WHERE id = $1 AND donor_id = $2", [resourceId, req.user.id])
-      : await pool.query("SELECT * FROM resources WHERE id = $1 AND (status = 'AVAILABLE' OR donor_id = $2)", [resourceId, req.user.id]);
+      ? await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE r.id = $1 AND r.donor_id = $2", [resourceId, req.user.id])
+      : await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE r.id = $1 AND (r.status = 'AVAILABLE' OR r.donor_id = $2)", [resourceId, req.user.id]);
 
   if (!result.rows[0]) return res.status(404).json({ error: "Resource not found" });
-  return res.json({ resource: resourceView(result.rows[0]) });
+  return res.json({ resource: resourceView(result.rows[0], req.user.id) });
 }));
 
 app.post("/api/resources", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
@@ -249,7 +250,7 @@ app.post("/api/resources", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN
     "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
     [req.user.id, name, category, quantity, text(req.body.condition, "Good"), text(req.body.location, "Not specified"), text(req.body.availability, "Available now"), text(req.body.description), text(req.body.specifications)]
   );
-  return res.status(201).json({ resource: resourceView(result.rows[0]) });
+  return res.status(201).json({ resource: resourceView(result.rows[0], req.user.id) });
 }));
 
 app.put("/api/resources/:id", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
@@ -313,7 +314,7 @@ app.get("/api/requests", requireAuth, asyncRoute(async (req, res) => {
     "FROM requests q JOIN resources r ON r.id = q.resource_id JOIN users u ON u.id = q.recipient_id " +
     "WHERE " + conditions.join(" AND ") + " ORDER BY q.requested_at DESC", params
   );
-  return res.json({ requests: result.rows.map(requestView), count: result.rowCount });
+  return res.json({ requests: result.rows.map(item => requestView(item, req.user.id)), count: result.rowCount });
 }));
 
 app.post("/api/requests", requireAuth, requireRole("RECIPIENT"), asyncRoute(async (req, res) => {
@@ -335,7 +336,7 @@ app.post("/api/requests", requireAuth, requireRole("RECIPIENT"), asyncRoute(asyn
     );
     await client.query("UPDATE resources SET status = 'REQUESTED', updated_at = NOW() WHERE id = $1", [resourceId]);
     await client.query("COMMIT"); finished = true;
-    return res.status(201).json({ request: requestView(await getRequest(pool, requestResult.rows[0].id)) });
+    return res.status(201).json({ request: requestView(await getRequest(pool, requestResult.rows[0].id), req.user.id) });
   } catch (error) {
     if (!finished) await client.query("ROLLBACK");
     if (error.code === "23505") return res.status(409).json({ error: "You already have an active request for this resource" });
@@ -365,7 +366,7 @@ async function reviewRequest(req, res, action) {
       if (pending.rows[0].count === 0) await client.query("UPDATE resources SET status = 'AVAILABLE', updated_at = NOW() WHERE id = $1", [request.resource_id]);
     }
     await client.query("COMMIT"); finished = true;
-    return res.json({ request: requestView(await getRequest(pool, requestId)) });
+    return res.json({ request: requestView(await getRequest(pool, requestId), req.user.id) });
   } catch (error) { if (!finished) await client.query("ROLLBACK"); throw error; }
   finally { client.release(); }
 }
@@ -507,8 +508,8 @@ app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRo
   const params = [req.user.id]; const conditions = ["status = 'AVAILABLE' AND donor_id <> $1"];
   if (req.query.category) { params.push(text(req.query.category)); conditions.push("LOWER(category) = LOWER($" + params.length + ")"); }
   if (req.query.search) { params.push("%" + text(req.query.search) + "%"); conditions.push("(name ILIKE $" + params.length + " OR location ILIKE $" + params.length + " OR description ILIKE $" + params.length + ")"); }
-  const result = await pool.query("SELECT * FROM resources WHERE " + conditions.join(" AND ") + " ORDER BY created_at DESC", params);
-  const matches = result.rows.map(item => Object.assign(resourceView(item), matchingScore(item, req.query))).sort((a, b) => b.matchScore - a.matchScore);
+  const result = await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE " + conditions.join(" AND ") + " ORDER BY r.created_at DESC", params);
+  const matches = result.rows.map(item => Object.assign(resourceView(item, req.user.id), matchingScore(item, req.query))).sort((a, b) => b.matchScore - a.matchScore);
   return res.json({ matches, scoring: { category: 30, location: 20, quantity: 20, urgency: 15, availability: 15 } });
 }));
 
