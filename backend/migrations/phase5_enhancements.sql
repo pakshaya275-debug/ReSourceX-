@@ -216,3 +216,51 @@ ALTER TABLE messages ADD CONSTRAINT messages_exchange_or_request_check
 -- 6. RESOURCE HISTORY — audit trail for traceability
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS resource_history (
+  id BIGSERIAL PRIMARY KEY,
+  resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  action VARCHAR(30) NOT NULL,
+  performed_by BIGINT NOT NULL REFERENCES users(id),
+  performed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  details JSONB,
+  resource_snapshot JSONB
+);
+CREATE INDEX IF NOT EXISTS resource_history_resource_id_idx ON resource_history (resource_id, performed_at DESC);
+CREATE INDEX IF NOT EXISTS resource_history_action_idx ON resource_history (action);
+
+-- Organisation verification history. A non-unique index permits renewal records.
+CREATE TABLE IF NOT EXISTS organisation_verifications (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  verified_by BIGINT REFERENCES users(id),
+  verified_at TIMESTAMPTZ,
+  document_type VARCHAR(40),
+  document_reference TEXT,
+  notes TEXT,
+  expires_at DATE
+);
+CREATE INDEX IF NOT EXISTS organisation_verifications_user_idx ON organisation_verifications (user_id);
+CREATE INDEX IF NOT EXISTS organisation_verifications_verified_idx ON organisation_verifications (verified_at DESC);
+
+-- Repair the earlier permissive message constraint even when this migration was previously run.
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_exchange_or_request_check;
+ALTER TABLE messages ADD CONSTRAINT messages_exchange_or_request_check
+  CHECK (
+    (exchange_id IS NOT NULL AND request_id IS NULL)
+    OR (exchange_id IS NULL AND request_id IS NOT NULL)
+  ) NOT VALID;
+
+-- Keep existing donation workflow columns and status constraints compatible.
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS handed_over_at TIMESTAMPTZ;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+
+ALTER TABLE resources DROP CONSTRAINT IF EXISTS resources_status_check;
+ALTER TABLE resources ADD CONSTRAINT resources_status_check
+  CHECK (status IN ('AVAILABLE', 'REQUESTED', 'ALLOCATED', 'HANDED_OVER', 'COMPLETED'));
+
+ALTER TABLE requests DROP CONSTRAINT IF EXISTS requests_status_check;
+ALTER TABLE requests ADD CONSTRAINT requests_status_check
+  CHECK (status IN ('PENDING', 'APPROVED', 'DECLINED', 'HANDED_OVER', 'COMPLETED'));
+
+-- COMPLETE
+-- This migration is additive for the donation workflow. Back up the database
+-- before applying it to a production instance.
