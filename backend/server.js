@@ -504,7 +504,7 @@ function matchingScore(resource, criteria) {
   return { matchScore: Math.round(score), matchReasons: reasons };
 }
 app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
-  const params = []; const conditions = ["status = 'AVAILABLE'"];
+  const params = [req.user.id]; const conditions = ["status = 'AVAILABLE' AND donor_id <> $1"];
   if (req.query.category) { params.push(text(req.query.category)); conditions.push("LOWER(category) = LOWER($" + params.length + ")"); }
   if (req.query.search) { params.push("%" + text(req.query.search) + "%"); conditions.push("(name ILIKE $" + params.length + " OR location ILIKE $" + params.length + " OR description ILIKE $" + params.length + ")"); }
   const result = await pool.query("SELECT * FROM resources WHERE " + conditions.join(" AND ") + " ORDER BY created_at DESC", params);
