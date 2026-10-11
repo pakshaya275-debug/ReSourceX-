@@ -277,7 +277,7 @@ app.put("/api/resources/:id", requireAuth, requireRole("DONOR", "RECIPIENT", "AD
   if (!updates.length) return res.status(400).json({ error: "No editable fields were provided" });
   values.push(resourceId);
   const result = await pool.query("UPDATE resources SET " + updates.join(", ") + ", updated_at = NOW() WHERE id = $" + values.length + " RETURNING *", values);
-  return res.json({ resource: resourceView(result.rows[0]) });
+  return res.json({ resource: resourceView(result.rows[0], req.user.id) });
 }));
 
 app.delete("/api/resources/:id", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
