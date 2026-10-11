@@ -18,7 +18,9 @@ ALTER TABLE users
   ADD COLUMN IF NOT EXISTS profile_picture_url TEXT;
 
 -- Backfill existing users with defaults
-UPDATE users SET location_privacy = 'APPROXIMATE' WHERE location_privacy IS NULL;
+UPDATE users SET location_privacy = LOWER(location_privacy) WHERE location_privacy IS NOT NULL;
+UPDATE users SET location_privacy = 'approximate' WHERE location_privacy IS NULL;
+ALTER TABLE users ALTER COLUMN location_privacy SET DEFAULT 'approximate';
 UPDATE users SET organisation_verified = FALSE WHERE organisation_verified IS NULL;
 
 CREATE INDEX IF NOT EXISTS users_organisation_verified_idx ON users (organisation_verified);
@@ -37,11 +39,12 @@ ALTER TABLE resources
 UPDATE resources SET condition_enum = 'GOOD' WHERE condition_enum IS NULL;
 
 -- Map old text 'condition' to enum where possible (case-insensitive)
-UPDATE resources SET condition_enum = 'POOR' WHERE condition_enum IS NULL AND LOWER(condition) LIKE '%poor%';
-UPDATE resources SET condition_enum = 'FAIR' WHERE condition_enum IS NULL AND LOWER(condition) LIKE '%fair%';
-UPDATE resources SET condition_enum = 'GOOD' WHERE condition_enum IS NULL AND LOWER(condition) LIKE '%good%';
-UPDATE resources SET condition_enum = 'EXCELLENT' WHERE condition_enum IS NULL AND LOWER(condition) LIKE '%excellent%';
-UPDATE resources SET condition_enum = 'NEW' WHERE condition_enum IS NULL AND LOWER(condition) LIKE '%new%';
+UPDATE resources SET condition_enum = CASE
+  WHEN LOWER(condition) LIKE '%poor%' THEN 'POOR'
+  WHEN LOWER(condition) LIKE '%fair%' THEN 'FAIR'
+  WHEN LOWER(condition) LIKE '%excellent%' THEN 'EXCELLENT'
+  WHEN LOWER(condition) LIKE '%new%' THEN 'NEW'
+  ELSE 'GOOD' END;
 
 CREATE INDEX IF NOT EXISTS resources_latitude_idx ON resources (latitude);
 CREATE INDEX IF NOT EXISTS resources_longitude_idx ON resources (longitude);
@@ -194,7 +197,6 @@ CREATE TABLE IF NOT EXISTS messages (
     CHECK (
       (exchange_id IS NOT NULL AND request_id IS NULL)
       OR (exchange_id IS NULL AND request_id IS NOT NULL)
-      OR (exchange_id IS NULL AND request_id IS NOT NULL)
     )
 );
 
@@ -208,55 +210,3 @@ CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON messages (sender_id, sent_a
 CREATE TABLE IF NOT EXISTS resource_history (
   id BIGSERIAL PRIMARY KEY,
   resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
-  action VARCHAR(30) NOT NULL,
-  performed_by BIGINT NOT NULL REFERENCES users(id),
-  performed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  details JSONB,
-  resource_snapshot JSONB
-);
-
-CREATE INDEX IF NOT EXISTS resource_history_resource_id_idx ON resource_history (resource_id, performed_at DESC);
-CREATE INDEX IF NOT EXISTS resource_history_action_idx ON resource_history (action);
-
--- =====================================================================
--- 7. ORGANISATION VERIFICATIONS — manual admin approval
--- =====================================================================
-CREATE TABLE IF NOT EXISTS organisation_verifications (
-  id BIGSERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  verified_by BIGINT REFERENCES users(id),
-  verified_at TIMESTAMPTZ,
-  document_type VARCHAR(40),
-  document_reference TEXT,
-  notes TEXT,
-  expires_at DATE
-);
-
-CREATE INDEX IF NOT EXISTS organisation_verifications_user_idx ON organisation_verifications (user_id);
-
-CREATE INDEX IF NOT EXISTS organisation_verifications_verified_idx ON organisation_verifications (verified_at DESC);
-
--- =====================================================================
--- 8. EXISTING TABLES — ensure constraints are up to date
--- =====================================================================
--- Requests: ensure handover/completed timestamps exist (from phase4)
-ALTER TABLE requests ADD COLUMN IF NOT EXISTS handed_over_at TIMESTAMPTZ;
-ALTER TABLE requests ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
-
--- Resources: ensure status constraint includes all states
-ALTER TABLE resources DROP CONSTRAINT IF EXISTS resources_status_check;
-ALTER TABLE resources ADD CONSTRAINT resources_status_check
-  CHECK (status IN ('AVAILABLE', 'REQUESTED', 'ALLOCATED', 'HANDED_OVER', 'COMPLETED'));
-
--- Requests: ensure status constraint includes all states
-ALTER TABLE requests DROP CONSTRAINT IF EXISTS requests_status_check;
-ALTER TABLE requests ADD CONSTRAINT requests_status_check
-  CHECK (status IN ('PENDING', 'APPROVED', 'DECLINED', 'HANDED_OVER', 'COMPLETED'));
-
--- =====================================================================
--- COMPLETE
--- =====================================================================
--- After running this migration:
--- - All v1 tables remain intact and functional
--- - New tables support exchanges, notifications, messaging, history, org verification
--- - Run: psql "$DATABASE_URL" -f migrations/phase5_enhancements.sql
