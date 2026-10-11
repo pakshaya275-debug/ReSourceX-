@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resource Exchanges | ReSourceX</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.exchange-wrap{max-width:1120px;margin:0 auto;padding:28px 22px 60px}
+.exchange-hero{background:linear-gradient(135deg,#087f5b,#0f9d82);color:#fff;border-radius:18px;padding:28px;margin-bottom:22px}
+.exchange-hero h1{font-size:clamp(1.7rem,3vw,2.4rem);margin-bottom:8px}.exchange-hero p{max-width:760px;line-height:1.6;opacity:.95}
+.exchange-panel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:22px;box-shadow:0 8px 24px rgba(20,50,38,.04)}
+.exchange-panel h2{margin-bottom:7px;color:var(--dark)}.muted{color:var(--muted);line-height:1.5}
+.exchange-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
+.exchange-form .form-group{display:flex;flex-direction:column;gap:7px}.exchange-form label{font-weight:600;font-size:.92rem}.exchange-form input,.exchange-form select,.message-input{border:1px solid var(--border);border-radius:9px;padding:11px 12px;font:inherit;width:100%;background:#fff}
+.exchange-form .wide{grid-column:1/-1}.exchange-form button,.action-btn{border:0;border-radius:9px;padding:11px 15px;font:inherit;font-weight:650;cursor:pointer;background:var(--primary);color:#fff}.exchange-form button:disabled,.action-btn:disabled{opacity:.55;cursor:not-allowed}
+.exchange-list{display:grid;gap:14px}.exchange-card{border:1px solid var(--border);border-radius:14px;padding:18px;background:#fff}.exchange-card-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}.exchange-card h3{font-size:1.1rem;margin-bottom:5px;color:var(--dark)}
+.exchange-status{font-size:.78rem;font-weight:750;letter-spacing:.03em;border-radius:100px;padding:6px 10px;background:#edf5f1;color:#087f5b;white-space:nowrap}
+.exchange-resources{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.exchange-resource{background:#f5faf7;border-radius:10px;padding:13px}.exchange-resource strong{display:block;margin-bottom:5px}.exchange-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.action-btn.secondary{background:#e8f4ee;color:#075d43}.action-btn.danger{background:#fff0ed;color:#a52d1c}.action-btn.neutral{background:#edf1ef;color:#33423b}
+.exchange-note{font-size:.9rem;color:var(--muted);margin-top:12px;line-height:1.5}.exchange-alert{display:none;border-radius:9px;padding:12px 14px;margin:14px 0}.exchange-alert.error{display:block;background:#fff0ed;color:#982a1a}.exchange-alert.success{display:block;background:#e9f7f1;color:#075d43}
+.message-area{display:none;border-top:1px solid var(--border);margin-top:15px;padding-top:14px}.message-area.open{display:block}.message-list{display:grid;gap:8px;margin-bottom:12px}.message-item{padding:9px 11px;background:#f5f8f6;border-radius:8px;font-size:.9rem}.message-item small{display:block;color:var(--muted);margin-bottom:4px}.message-row{display:flex;gap:8px}.message-row .message-input{flex:1}.empty-state{padding:25px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:12px}
+.top-links{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}.top-links a{color:var(--primary);font-weight:650;text-decoration:none}
+@media(max-width:680px){.exchange-wrap{padding:18px 12px 40px}.exchange-form,.exchange-resources{grid-template-columns:1fr}.exchange-card-top{flex-direction:column}.message-row{flex-direction:column}.top-links{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<main class="exchange-wrap">
+  <div class="top-links"><a id="dashboardLink" href="recipient_dashboard.html">← Back to dashboard</a><a href="add_resource.html">＋ List a resource</a></div>
+  <header class="exchange-hero">
+    <h1>Resource Exchange</h1>
+    <p>Offer a resource you own in return for another resource. Both participants must confirm the handover and receipt before an exchange is marked complete. Your pickup location stays hidden until the offer is accepted.</p>
+  </header>
+  <div id="pageAlert" class="exchange-alert" role="status" aria-live="polite"></div>
+  <section class="exchange-panel">
+    <h2 id="formHeading">Propose an exchange</h2>
+    <p class="muted" id="formIntro">Choose one of your available resources and an available resource owned by another participant.</p>
+    <form class="exchange-form" id="exchangeForm">
+      <div class="form-group"><label for="offeredResource">Your resource</label><select id="offeredResource" required><option value="">Loading resources…</option></select></div>
+      <div class="form-group"><label for="requestedResource">Resource you want</label><select id="requestedResource" required><option value="">Loading resources…</option></select></div>
+      <div class="form-group"><label for="offeredQuantity">Quantity you offer</label><input id="offeredQuantity" type="number" min="1" value="1" required></div>
+      <div class="form-group"><label for="requestedQuantity">Quantity requested</label><input id="requestedQuantity" type="number" min="1" value="1" required></div>
+      <div class="form-group wide"><label for="exchangeMessage">Message (optional)</label><input id="exchangeMessage" type="text" maxlength="1000" placeholder="Share relevant details or pickup preferences"></div>
+      <div class="wide"><button type="submit" id="submitExchange">Send exchange proposal</button> <button type="button" id="cancelCounter" class="action-btn neutral" style="display:none">Cancel counteroffer</button></div>
+    </form>
+    <p class="exchange-note" id="resourceHint">Only resources you own can be offered. Resources involved in active exchanges cannot be edited or deleted.</p>
+  </section>
+  <section class="exchange-panel">
+    <h2>Your exchanges</h2>
+    <p class="muted" style="margin-bottom:16px">Review offers, negotiate counteroffers, coordinate handover, and confirm receipt.</p>
+    <div id="exchangeList" class="exchange-list"><div class="empty-state">Loading your exchanges…</div></div>
+  </section>
+</main>
+<script>
+(() => {
+  const API = window.RESOURCEX_API_URL || "https://resourcex-hjz9.onrender.com/api";
+  const tokenKey = "resourceXAuthToken", userKey = "resourceXCurrentUser";
+  const token = localStorage.getItem(tokenKey);
+  let user = null, allResources = [], counterForId = null;
+  try { user = JSON.parse(localStorage.getItem(userKey) || "null"); } catch (_) {}
+  const $ = id => document.getElementById(id);
+  const escapeHtml = value => String(value == null ? "" : value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  async function api(path, options={}) {
+    const headers = Object.assign({}, options.headers || {}, { Authorization: "Bearer " + token });
+    const opts = Object.assign({}, options, { headers });
+    if (options.body && typeof options.body !== "string") { headers["Content-Type"]="application/json"; opts.body=JSON.stringify(options.body); }
+    const response = await fetch(API + path, opts);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Request failed ("+response.status+")");
+    return data;
+  }
+  function alertMessage(message, kind="error") {
+    const box=$("pageAlert"); box.className="exchange-alert "+kind; box.textContent=message;
+    box.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+  function clearAlert(){const box=$("pageAlert");box.className="exchange-alert";box.textContent="";}
+  function resourceLabel(r){return "#"+r.id+" · "+r.name+" ("+r.category+", qty "+r.quantity+")";}
+  function setOptions(select, resources, placeholder) {
+    select.innerHTML='<option value="">'+escapeHtml(placeholder)+'</option>'+resources.map(r=>'<option value="'+escapeHtml(r.id)+'">'+escapeHtml(resourceLabel(r))+'</option>').join("");
+  }
+  async function loadResources(requestedOwner=null) {
+    const data=await api("/resources?marketplace=true&limit=100");
+    allResources=data.resources||[];
+    const own=allResources.filter(r=>String(r.donorId)===String(user.id)&&r.status==="AVAILABLE");
+    const other=allResources.filter(r=>String(r.donorId)!==String(user.id)&&r.status==="AVAILABLE"&&(!requestedOwner||String(r.donorId)===String(requestedOwner)));
+    setOptions($("offeredResource"),own,own.length?"Choose a resource you own":"No available resources you own");
+    setOptions($("requestedResource"),other,other.length?"Choose another participant's resource":"No eligible resources available");
+    $("offeredQuantity").max=own.find(r=>String(r.id)===$("offeredResource").value)?.quantity||"";
+    if(!own.length) $("resourceHint").textContent="First, use “List a resource” to add an available resource to your account. You can then propose or counter an exchange.";
+  }
+  function setCounterMode(exchangeId, otherId) {
+    counterForId=exchangeId;
+    loadResources(otherId).then(()=>{
+      $("formHeading").textContent="Make a counteroffer";
+      $("formIntro").textContent="Choose a resource you own and a resource owned by the other participant. Your counteroffer replaces the current terms.";
+      $("submitExchange").textContent="Send counteroffer";
+      $("cancelCounter").style.display="inline-block";
+      $("exchangeForm").scrollIntoView({behavior:"smooth",block:"start"});
+    }).catch(e=>alertMessage(e.message));
+  }
+  function resetFormMode(){
+    counterForId=null;
+    $("formHeading").textContent="Propose an exchange";
+    $("formIntro").textContent="Choose one of your available resources and an available resource owned by another participant.";
+    $("submitExchange").textContent="Send exchange proposal";
+    $("cancelCounter").style.display="none";
+    loadResources().catch(e=>alertMessage(e.message));
+  }
+  $("cancelCounter").addEventListener("click",resetFormMode);
+  $("offeredResource").addEventListener("change",()=>{
+    const r=allResources.find(x=>String(x.id)===$("offeredResource").value);
+    if(r){$("offeredQuantity").max=r.quantity;$("offeredQuantity").value=Math.min(Number($("offeredQuantity").value)||1,r.quantity);}
+  });
+  $("requestedResource").addEventListener("change",()=>{
+    const r=allResources.find(x=>String(x.id)===$("requestedResource").value);
+    if(r){$("requestedQuantity").max=r.quantity;$("requestedQuantity").value=Math.min(Number($("requestedQuantity").value)||1,r.quantity);}
+  });
+  $("exchangeForm").addEventListener("submit",async event=>{
+    event.preventDefault();clearAlert();
+    const offered=allResources.find(r=>String(r.id)===$("offeredResource").value);
+    const requested=allResources.find(r=>String(r.id)===$("requestedResource").value);
+    const oq=Number($("offeredQuantity").value),rq=Number($("requestedQuantity").value),message=$("exchangeMessage").value.trim();
+    if(!offered||!requested||String(offered.donorId)===String(requested.donorId)){alertMessage("Choose your own resource and a different participant's resource.");return;}
+    if(!Number.isSafeInteger(oq)||oq<1||oq>offered.quantity||!Number.isSafeInteger(rq)||rq<1||rq>requested.quantity){alertMessage("Quantities must be positive whole numbers and cannot exceed available stock.");return;}
+    const btn=$("submitExchange");btn.disabled=true;
+    try{
+      if(counterForId){
+        await api("/exchanges/"+counterForId+"/respond",{method:"PUT",body:{action:"counteroffer",offered_resource_id:Number(offered.id),offered_quantity:oq,requested_resource_id:Number(requested.id),requested_quantity:rq,message}});
+        alertMessage("Counteroffer sent successfully.","success");
+      }else{
+        await api("/exchanges",{method:"POST",body:{recipient_id:Number(requested.donorId),offered_resource_id:Number(offered.id),offered_quantity:oq,requested_resource_id:Number(requested.id),requested_quantity:rq,message}});
+        alertMessage("Exchange proposal sent successfully.","success");
+      }
+      $("exchangeMessage").value="";resetFormMode();await loadExchanges();
+    }catch(e){alertMessage(e.message);}finally{btn.disabled=false;}
+  });
+  async function loadMessages(exchangeId, area) {
+    try {
+      const data=await api("/exchanges/"+exchangeId+"/messages");
+      const list=area.querySelector(".message-list");
+      list.innerHTML=(data.messages||[]).slice().reverse().map(m=>'<div class="message-item"><small>'+escapeHtml((m.sender_first_name||"Participant")+" "+(m.sender_last_name||""))+' · '+escapeHtml(new Date(m.sent_at).toLocaleString())+'</small>'+escapeHtml(m.content)+'</div>').join("")||'<p class="muted">No messages yet.</p>';
+    }catch(e){area.querySelector(".message-list").textContent=e.message;}
+  }
+  async function loadExchanges() {
+    const container=$("exchangeList");
+    try{
+      const data=await api("/exchanges");
+      const exchanges=data.exchanges||[];
+      if(!exchanges.length){container.innerHTML='<div class="empty-state">No exchanges yet. Propose one above to get started.</div>';return;}
+      container.innerHTML=exchanges.map(ex=>{
+        const isInitiator=String(ex.initiator.id)===String(user.id),isCurrentProposer=String(ex.currentProposerId)===String(user.id);
+        const myHandover=isInitiator?ex.initiatorHandoverConfirmed:ex.recipientHandoverConfirmed;
+        const myReceipt=isInitiator?ex.initiatorReceiptConfirmed:ex.recipientReceiptConfirmed;
+        const offered=(ex.offeredResources||[]).map(r=>'<div class="exchange-resource"><strong>Offered: '+escapeHtml(r.name)+'</strong><span>'+escapeHtml(r.category)+' · quantity '+escapeHtml(r.quantity)+'</span><div class="muted">'+(r.location?escapeHtml(r.location):'Pickup location shared after acceptance')+'</div></div>').join("");
+        const requested=(ex.requestedResources||[]).map(r=>'<div class="exchange-resource"><strong>Requested: '+escapeHtml(r.name)+'</strong><span>'+escapeHtml(r.category)+' · quantity '+escapeHtml(r.quantity)+'</span><div class="muted">'+(r.location?escapeHtml(r.location):'Pickup location shared after acceptance')+'</div></div>').join("");
+        const other=isInitiator?ex.recipient:ex.initiator;
+        let actions="";
+        if(["PROPOSED","COUNTERED"].includes(ex.status)&&!isCurrentProposer){
+          actions+='<button class="action-btn" data-action="accept" data-id="'+ex.id+'">Accept</button><button class="action-btn danger" data-action="decline" data-id="'+ex.id+'">Decline</button><button class="action-btn secondary" data-action="counter" data-id="'+ex.id+'" data-other="'+other.id+'">Counteroffer</button>';
+        }
+        if(["PROPOSED","COUNTERED"].includes(ex.status)&&isCurrentProposer) actions+='<button class="action-btn neutral" data-action="cancel" data-id="'+ex.id+'">Cancel proposal</button>';
+        if(["ACCEPTED","IN_PROGRESS"].includes(ex.status)&&!myHandover) actions+='<button class="action-btn" data-action="progress" data-id="'+ex.id+'">Confirm my handover</button>';
+        if(["ACCEPTED","IN_PROGRESS"].includes(ex.status)&&myHandover&&!["IN_PROGRESS"].includes(ex.status)) actions+='<span class="muted">Your handover is confirmed; waiting for the other participant.</span>';
+        if(ex.status==="IN_PROGRESS"&&!myReceipt) actions+='<button class="action-btn" data-action="complete" data-id="'+ex.id+'">Confirm receipt</button>';
+        if(ex.status==="IN_PROGRESS"&&myReceipt) actions+='<span class="muted">Your receipt is confirmed; waiting for the other participant.</span>';
+        return '<article class="exchange-card"><div class="exchange-card-top"><div><h3>Exchange #'+escapeHtml(ex.id)+' · '+escapeHtml(other.firstName||"Participant")+' '+escapeHtml(other.lastName||"")+'</h3><p class="muted">'+escapeHtml(ex.message||"No message added")+'</p></div><span class="exchange-status">'+escapeHtml(ex.status)+'</span></div><div class="exchange-resources">'+(offered||'<div class="exchange-resource">Offered resource unavailable</div>')+(requested||'<div class="exchange-resource">Requested resource unavailable</div>')+'</div><p class="muted">Proposed '+escapeHtml(new Date(ex.proposedAt).toLocaleString())+'</p><div class="exchange-actions">'+actions+'<button class="action-btn neutral" data-action="messages" data-id="'+ex.id+'">Messages</button></div><div class="message-area" id="messages-'+ex.id+'"><div class="message-list"><p class="muted">Loading messages…</p></div><form class="message-row" data-message-form="'+ex.id+'"><input class="message-input" name="content" maxlength="2000" placeholder="Write a message…" required><button class="action-btn" type="submit">Send</button></form></div></article>';
+      }).join("");
+      container.querySelectorAll("[data-action]").forEach(button=>button.addEventListener("click",()=>handleAction(button)));
+      container.querySelectorAll("[data-message-form]").forEach(form=>form.addEventListener("submit",sendMessage));
+    }catch(e){container.innerHTML='<div class="empty-state">Unable to load exchanges: '+escapeHtml(e.message)+'</div>';}
+  }
+  async function handleAction(button) {
+    const id=button.dataset.id,action=button.dataset.action;button.disabled=true;clearAlert();
+    try{
+      if(action==="counter"){setCounterMode(id,button.dataset.other);return;}
+      if(action==="accept"||action==="decline"){
+        const message=action==="decline"?"Declined via ReSourceX exchange page":"";
+        await api("/exchanges/"+id+"/respond",{method:"PUT",body:{action,message}});
+      }else if(action==="cancel") await api("/exchanges/"+id+"/cancel",{method:"PUT"});
+      else if(action==="progress") await api("/exchanges/"+id+"/progress",{method:"PUT"});
+      else if(action==="complete") await api("/exchanges/"+id+"/complete",{method:"PUT"});
+      else if(action==="messages"){
+        const area=$("messages-"+id);area.classList.toggle("open");
+        if(area.classList.contains("open"))await loadMessages(id,area);
+        button.disabled=false;return;
+      }
+      alertMessage("Exchange updated.","success");await loadExchanges();
+    }catch(e){alertMessage(e.message);}finally{button.disabled=false;}
+  }
+  async function sendMessage(event){
+    event.preventDefault();const form=event.currentTarget,id=form.dataset.messageForm,input=form.elements.content,content=input.value.trim();
+    if(!content)return;
+    const button=form.querySelector("button");button.disabled=true;
+    try{await api("/exchanges/"+id+"/messages",{method:"POST",body:{content}});input.value="";await loadMessages(id,form.closest(".message-area"));}
+    catch(e){alertMessage(e.message);}finally{button.disabled=false;}
+  }
+  async function init(){
+    if(!token||!user){window.location.href="index.html";return;}
+    const role=String(user.role||"").toUpperCase();
+    if(!["DONOR","RECIPIENT"].includes(role)){window.location.href=role==="ADMIN"?"admin_dashboard.html":"index.html";return;}
+    $("dashboardLink").href=role==="DONOR"?"donor_dashboard.html":"recipient_dashboard.html";
+    try{await loadResources();await loadExchanges();}
+    catch(e){alertMessage(e.message);}
+  }
+  init();
+})();
+</script>
+</body>
+</html>
