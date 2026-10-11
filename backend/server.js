@@ -51,7 +51,7 @@ const userView = row => ({
 const resourceView = (row, viewerId) => ({
   id: row.id, donorId: row.donor_id, name: row.name, category: row.category,
   quantity: row.quantity, condition: row.condition,
-  location: String(row.donor_id) === String(viewerId) || row.location_privacy === "exact" ? row.location : null,
+  location: String(row.donor_id) === String(viewerId) ? row.location : null,
   availability: row.availability, description: row.description,
   specifications: row.specifications, status: row.status,
   createdAt: row.created_at, updatedAt: row.updated_at
@@ -63,7 +63,7 @@ const requestView = (row, viewerId) => ({
   handedOverAt: row.handed_over_at, completedAt: row.completed_at,
   resource: row.resource_name ? {
     id: row.resource_id, name: row.resource_name, category: row.resource_category,
-    quantity: row.resource_quantity, location: String(row.donor_id) === String(viewerId) || row.resource_location_privacy === "exact" ? row.resource_location : null,
+    quantity: row.resource_quantity, location: String(row.donor_id) === String(viewerId) || (["APPROVED", "HANDED_OVER", "COMPLETED"].includes(row.status) && row.resource_location_privacy === "exact") ? row.resource_location : null,
     status: row.resource_status, donorId: row.donor_id
   } : undefined,
   recipient: row.recipient_email ? {
@@ -153,6 +153,34 @@ app.get("/api/auth/me", requireAuth, asyncRoute(async (req, res) => {
   const result = await pool.query("SELECT id, first_name, last_name, email, role, created_at FROM users WHERE id = $1", [req.user.id]);
   if (!result.rows[0]) return res.status(404).json({ error: "User not found" });
   return res.json({ user: userView(result.rows[0]) });
+}));
+
+app.get("/api/profile", requireAuth, asyncRoute(async (req, res) => {
+  const result = await pool.query(
+    "SELECT id, first_name, last_name, email, role, organisation_name, organisation_type, phone_number, location_privacy, organisation_verified " +
+    "FROM users WHERE id = $1", [req.user.id]
+  );
+  if (!result.rows[0]) return res.status(404).json({ error: "User not found" });
+  const row = result.rows[0];
+  return res.json({ profile: {
+    id: row.id, firstName: row.first_name, lastName: row.last_name, email: row.email, role: row.role,
+    organisationName: row.organisation_name, organisationType: row.organisation_type,
+    phoneNumber: row.phone_number, locationPrivacy: row.location_privacy,
+    organisationVerified: Boolean(row.organisation_verified)
+  }});
+}));
+
+app.put("/api/profile/location-privacy", requireAuth, asyncRoute(async (req, res) => {
+  const privacy = text(req.body.locationPrivacy || req.body.location_privacy).toLowerCase();
+  if (!["exact", "approximate", "none"].includes(privacy)) {
+    return res.status(400).json({ error: "locationPrivacy must be exact, approximate, or none" });
+  }
+  const result = await pool.query(
+    "UPDATE users SET location_privacy = $1 WHERE id = $2 RETURNING location_privacy",
+    [privacy, req.user.id]
+  );
+  if (!result.rows[0]) return res.status(404).json({ error: "User not found" });
+  return res.json({ locationPrivacy: result.rows[0].location_privacy });
 }));
 
 app.get("/api/admin/users", requireAuth, requireRole("ADMIN"), asyncRoute(async (req, res) => {
