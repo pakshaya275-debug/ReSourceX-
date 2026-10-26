@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Match | ReSourceX</title>
+<style>
+  :root{
+    --paper:#f5f1e8; --card:#fffdf8; --ink:#1f1c17; --muted:#6d665a; --line:#e2dacb;
+    --accent:#b4502a; --accent-ink:#fff; --ok:#2e5e4e;
+    --f-category:#b4502a; --f-location:#2e5e4e; --f-quantity:#c99a2e; --f-urgency:#7b4a7d; --f-availability:#4a6a8a;
+    --serif:Georgia,"Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+  a{color:inherit} button,input,select{font:inherit;color:inherit}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 28px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:5}
+  .brand{font-family:var(--serif);font-size:22px;letter-spacing:.2px;text-decoration:none}
+  .brand span{color:var(--accent)}
+  .nav{display:flex;gap:18px;font-size:14px}
+  .nav a{text-decoration:none;color:var(--muted);padding:4px 0;border-bottom:2px solid transparent}
+  .nav a[aria-current]{color:var(--ink);border-color:var(--accent)}
+  .nav a:hover{color:var(--ink)}
+  .wrap{display:grid;grid-template-columns:340px 1fr;gap:28px;max-width:1240px;margin:0 auto;padding:28px}
+  @media (max-width:880px){.wrap{grid-template-columns:1fr}}
+  h1{font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.15;margin:0 0 6px}
+  .lede{color:var(--muted);margin:0 0 22px;max-width:60ch}
+  aside.needs{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;align-self:start;position:sticky;top:90px}
+  .needs h2{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 12px}
+  .field{display:grid;gap:5px;margin-bottom:12px}
+  .field label,.legend-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .field input,.field select{padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;width:100%}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .weights{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+  .weight{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+  .weight .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .weight output{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .weights-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--muted)}
+  .link{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;font-size:13px}
+  .modebar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+  .seg button{border:0;background:none;padding:8px 14px;cursor:pointer;color:var(--muted)}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+  .status{font-size:13px;color:var(--muted)}
+  .status.warn{color:var(--accent)}
+  .ledger{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;grid-template-columns:56px 1fr auto;gap:16px;align-items:start;transition:border-color .2s}
+  .item:hover{border-color:#cfc4ad}
+  .rank{font-family:var(--serif);font-size:26px;color:var(--muted);line-height:1}
+  .name{font-family:var(--serif);font-size:19px;margin:0 0 3px}
+  .meta{color:var(--muted);font-size:13px}
+  .bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:#ece5d6;margin:12px 0 6px;max-width:460px}
+  .bar span{display:block;height:100%;transition:width .35s ease}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+  .score{text-align:right;min-width:110px}
+  .pct{font-family:var(--serif);font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+  .pct small{font-size:18px}
+  .score .basis{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:4px}
+  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;cursor:pointer;font-size:14px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn:hover{border-color:#bfb49b}
+  .details{grid-column:2 / 4;border-top:1px dashed var(--line);padding-top:12px;margin-top:4px;display:grid;gap:8px}
+  .details[hidden]{display:none}
+  .frow{display:grid;grid-template-columns:110px 1fr 90px;gap:10px;align-items:center;font-size:13px}
+  .frow .track{height:6px;border-radius:999px;background:#ece5d6;overflow:hidden}
+  .frow .track span{display:block;height:100%}
+  .frow .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .reasons{margin:4px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+  .empty{background:var(--card);border:1px dashed #cfc4ad;border-radius:14px;padding:30px;text-align:center;color:var(--muted)}
+  .skeleton{height:92px;border-radius:14px;background:linear-gradient(90deg,#efe9dc,#f8f4ea,#efe9dc);background-size:200% 100%;animation:shimmer 1.2s infinite;border:1px solid var(--line)}
+  @keyframes shimmer{to{background-position:-200% 0}}
+  @media (max-width:640px){.item{grid-template-columns:40px 1fr}.score{grid-column:2;text-align:left;min-width:0}.details{grid-column:1 / 3}.frow{grid-template-columns:90px 1fr 70px}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;max-width:70ch}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="discover.html">Re<span>Source</span>X</a>
+  <nav class="nav" aria-label="Main">
+    <a href="discover.html" aria-current="page">Smart Match</a>
+    <a href="recipient_dashboard.html">Dashboard</a>
+    <a href="exchanges.html">Exchange</a>
+    <a href="profile.html">Profile</a>
+    <a href="index.html" id="signOut">Sign out</a>
+  </nav>
+</header>
+
+<main class="wrap">
+  <aside class="needs" aria-label="Your needs">
+    <h2>What do you need?</h2>
+    <form id="needs" autocomplete="off">
+      <div class="field"><label for="q">Keywords</label><input id="q" placeholder="e.g. eng, lab, chair"></div>
+      <div class="field"><label for="category">Category</label><input id="category" list="categories" placeholder="Any category"></div>
+      <datalist id="categories"><option>Books</option><option>Engineering</option><option>Equipment</option><option>Furniture</option><option>Food</option><option>Clothing</option><option>Electronics</option><option>Essentials</option></datalist>
+      <div class="row2">
+        <div class="field"><label for="qty">Units needed</label><input id="qty" type="number" min="1" placeholder="e.g. 10"></div>
+        <div class="field"><label for="urgency">Urgency</label>
+          <select id="urgency"><option value="">Any</option><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></select></div>
+      </div>
+      <div class="field"><label for="location">Area</label><input id="location" placeholder="e.g. Vellore"></div>
+      <button type="button" class="btn" id="locate" style="width:100%">Use my current location</button>
+      <p class="meta" id="locateStatus" style="margin:6px 0 0"></p>
+    </form>
+
+    <div class="weights" id="weights">
+      <div class="legend-title">How much each factor matters</div>
+      <div id="weightRows"></div>
+      <div class="weights-actions">
+        <span id="weightSum">Official weights: 100</span>
+        <button type="button" class="link" id="resetWeights">Reset to official</button>
+      </div>
+    </div>
+  </aside>
+
+  <section aria-live="polite">
+    <div class="modebar">
+      <div>
+        <h1>Smart Match</h1>
+        <p class="lede">Every resource is scored out of 100 across five factors. Open any result to see exactly where its points come from.</p>
+      </div>
+      <div class="seg" role="group" aria-label="Score view">
+        <button type="button" id="viewOfficial" aria-pressed="true">Official score</button>
+        <button type="button" id="viewCustom" aria-pressed="false">My priorities</button>
+      </div>
+    </div>
+    <p class="status" id="status"></p>
+    <ol class="ledger" id="results" aria-label="Ranked resources"></ol>
+    <p class="note">The official score uses the fixed weights shown in the project documentation (30, 20, 20, 15, 15). "My priorities" re-ranks the same results with the weights you choose. It is a comparison view and is not saved as a match.</p>
+  </section>
+</main>
+
+<script src="config.js?v=20261026"></script>
+<script src="notifications.js?v=20261025"></script>
+<script>
+(() => {
+  "use strict";
+  const API = window.RESOURCEX_API_URL;
+  const TOKEN_KEY = "resourceXAuthToken", USER_KEY = "resourceXCurrentUser", CACHE_KEY = "rxDiscoverLast";
+  const token = localStorage.getItem(TOKEN_KEY);
+  let user = null; try { user = JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch (e) {}
+  if (!token || !user || String(user.role || "").toUpperCase() !== "RECIPIENT") { window.location.href = "index.html"; return; }
+  document.getElementById("signOut").addEventListener("click", () => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); });
+
+  const FACTORS = [
+    { key: "category", label: "Category", max: 30, color: "var(--f-category)" },
+    { key: "location", label: "Location", max: 20, color: "var(--f-location)" },
+    { key: "quantity", label: "Quantity", max: 20, color: "var(--f-quantity)" },
+    { key: "urgency", label: "Urgency", max: 15, color: "var(--f-urgency)" },
+    { key: "availability", label: "Availability", max: 15, color: "var(--f-availability)" }
+  ];
+  const OFFICIAL = Object.fromEntries(FACTORS.map(f => [f.key, f.max]));
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const state = { items: [], priorities: { ...OFFICIAL }, view: "official", expanded: new Set(), coords: null, controller: null, timer: null };
+
+  /* ---------- priorities ---------- */
+  function renderWeights() {
+    $("weightRows").innerHTML = FACTORS.map(f => `
+      <label class="weight">
+        <span><span class="dot" style="background:${f.color}"></span>${f.label}</span>
+        <input type="range" min="0" max="50" step="1" value="${state.priorities[f.key]}" data-weight="${f.key}" aria-label="${f.label} priority">
+        <output data-out="${f.key}">${state.priorities[f.key]}</output>
+      </label>`).join("");
+    const total = Object.values(state.priorities).reduce((a, b) => a + b, 0);
+    const isOfficial = FACTORS.every(f => state.priorities[f.key] === f.max);
+    $("weightSum").textContent = (isOfficial ? "Official weights" : "Custom weights") + ": total " + total;
+  }
+  $("weightRows").addEventListener("input", e => {
+    const key = e.target.dataset.weight; if (!key) return;
+    state.priorities[key] = Number(e.target.value);
+    document.querySelector(`[data-out="${key}"]`).textContent = e.target.value;
+    setView("custom");
+    renderWeights(); render();
+  });
+  $("resetWeights").addEventListener("click", () => { state.priorities = { ...OFFICIAL }; renderWeights(); setView("official"); render(); });
+
+  /* ---------- view switch ---------- */
+  function setView(view) {
+    state.view = view;
+    $("viewOfficial").setAttribute("aria-pressed", String(view === "official"));
+    $("viewCustom").setAttribute("aria-pressed", String(view === "custom"));
+  }
+  $("viewOfficial").addEventListener("click", () => { setView("official"); render(); });
+  $("viewCustom").addEventListener("click", () => { setView("custom"); render(); });
+
+  /* ---------- scoring ---------- */
+  function customScore(item) {
+    const totalWeight = FACTORS.reduce((s, f) => s + state.priorities[f.key], 0);
+    if (!totalWeight) return 0;
+    const share = FACTORS.reduce((s, f) => {
+      const part = (item.breakdown || []).find(b => b.factor === f.key);
+      return s + (part ? part.points / part.max : 0) * state.priorities[f.key];
+    }, 0);
+    return (share / totalWeight) * 100;
+  }
+  function scoreOf(item) { return state.view === "custom" ? customScore(item) : item.matchScore; }
+
+  /* ---------- rendering ---------- */
+  function render() {
+    const list = state.items.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+    const box = $("results");
+    if (!list.length) {
+      box.innerHTML = `<li class="empty">No available resources match these needs yet. Try fewer keywords, or a broader area.</li>`;
+      return;
+    }
+    box.innerHTML = list.map((item, index) => {
+      const score = scoreOf(item);
+      const bars = FACTORS.map(f => {
+        const part = (item.breakdown || []).find(b => b.factor === f.key) || { points: 0 };
+        return `<span title="${f.label}: ${part.points} of ${f.max}" style="width:${Math.max(0, part.points)}%;background:${f.color}"></span>`;
+      }).join("");
+      const detailsOpen = state.expanded.has(String(item.id));
+      const frows = FACTORS.map(f => {
+        const part = (item.breakdown || []).find(b => b.factor === f.key) || { points: 0, max: f.max };
+        const pct = Math.round((part.points / f.max) * 100);
+        return `<div class="frow"><span>${f.label}</span><div class="track"><span style="width:${pct}%;background:${f.color}"></span></div><span class="num">${part.points} / ${f.max}</span></div>`;
+      }).join("");
+      const reasons = (item.matchReasons || []).map(r => `<li>${esc(r)}</li>`).join("");
+      return `
+      <li class="item" data-id="${esc(item.id)}">
+        <div class="rank">${index + 1}</div>
+        <div>
+          <h3 class="name">${esc(item.name)}</h3>
+          <div class="meta">${esc(item.category || "Other")} · ${esc(String(item.quantity))} available · ${esc(item.location || "Location not shared")}</div>
+          <div class="bar" role="img" aria-label="Score breakdown">${bars}</div>
+          <div class="legend">${FACTORS.map(f => `<span><span class="dot" style="background:${f.color};display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span>${f.label}</span>`).join("")}</div>
+        </div>
+        <div class="score">
+          <div class="pct">${Math.round(score)}<small>%</small></div>
+          <div class="basis">${state.view === "custom" ? "your priorities" : "official score"}</div>
+          <div class="actions" style="justify-content:flex-end">
+            <button type="button" class="btn" data-toggle="${esc(item.id)}" aria-expanded="${detailsOpen}">${detailsOpen ? "Hide" : "Why"}</button>
+            <button type="button" class="btn primary" data-request="${esc(item.id)}">Request</button>
+          </div>
+        </div>
+        <div class="details" ${detailsOpen ? "" : "hidden"}>
+          ${frows}
+          <ul class="reasons">${reasons}</ul>
+        </div>
+      </li>`;
+    }).join("");
+  }
+
+  $("results").addEventListener("click", e => {
+    const toggle = e.target.closest("[data-toggle]");
+    if (toggle) {
+      const id = toggle.dataset.toggle;
+      state.expanded.has(id) ? state.expanded.delete(id) : state.expanded.add(id);
+      render(); return;
+    }
+    const request = e.target.closest("[data-request]");
+    if (request) requestItem(request.dataset.request);
+  });
+
+  function requestItem(id) {
+    const ordered = state.items.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+    const item = ordered.find(i => String(i.id) === String(id));
+    if (!item) return;
+    localStorage.setItem("selectedResource", JSON.stringify(item));
+    const index = ordered.indexOf(item) + 1;
+    fetch(API + "/matching/events", { method: "POST", keepalive: true,
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ resourceId: item.id, action: "request", rank: index, score: item.matchScore }) }).catch(() => {});
+    window.location.href = "request_confirmation.html";
+  }
+
+  /* ---------- data ---------- */
+  function buildQuery() {
+    const p = new URLSearchParams();
+    const q = $("q").value.trim(), cat = $("category").value.trim(), loc = $("location").value.trim();
+    const qty = $("qty").value, urg = $("urgency").value;
+    if (q) p.set("search", q);
+    if (cat) p.set("category", cat);
+    if (loc) p.set("location", loc);
+    if (qty) p.set("quantity", qty);
+    if (urg) p.set("urgency", urg);
+    if (state.coords) { p.set("latitude", state.coords.latitude); p.set("longitude", state.coords.longitude); }
+    return p.toString();
+  }
+  async function search() {
+    const key = buildQuery();
+    if (state.controller) state.controller.abort();
+    state.controller = new AbortController();
+    $("status").className = "status";
+    $("status").textContent = "Searching…";
+    try {
+      const res = await fetch(API + "/matching?" + key, { headers: { Authorization: "Bearer " + token }, signal: state.controller.signal });
+      if (res.status === 401) { window.location.href = "index.html"; return; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Search failed");
+      state.items = data.matches || [];
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ key, at: Date.now(), items: state.items }));
+      $("status").textContent = state.items.length + " resource" + (state.items.length === 1 ? "" : "s") + " found · updated just now";
+      render();
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      $("status").className = "status warn";
+      $("status").textContent = "Could not refresh the results: " + err.message + ". Showing the last results.";
+    }
+  }
+  function scheduleSearch() { clearTimeout(state.timer); state.timer = setTimeout(search, 350); }
+  ["q", "category", "location", "qty", "urgency"].forEach(id => $(id).addEventListener("input", scheduleSearch));
+  $("urgency").addEventListener("change", scheduleSearch);
+
+  $("locate").addEventListener("click", () => {
+    if (!navigator.geolocation) { $("locateStatus").textContent = "This browser cannot read your location."; return; }
+    $("locateStatus").textContent = "Finding your location…";
+    navigator.geolocation.getCurrentPosition(pos => {
+      state.coords = { latitude: pos.coords.latitude.toFixed(5), longitude: pos.coords.longitude.toFixed(5) };
+      $("locateStatus").textContent = "Using your location. Distance now counts toward the location score.";
+      search();
+    }, () => { $("locateStatus").textContent = "Location was not shared. You can type an area instead."; }, { timeout: 10000, maximumAge: 600000 });
+  });
+
+  $("needs").addEventListener("submit", e => { e.preventDefault(); search(); });
+
+  /* ---------- start: show the last results instantly, then refresh ---------- */
+  renderWeights();
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null");
+    if (cached && cached.items) { state.items = cached.items; $("status").textContent = "Showing your last results while we refresh…"; render(); }
+    else { $("results").innerHTML = '<li class="skeleton"></li><li class="skeleton"></li><li class="skeleton"></li>'; }
+  } catch (e) {}
+  search();
+})();
+</script>
+</body>
+</html>

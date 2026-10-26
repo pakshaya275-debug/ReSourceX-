@@ -527,3 +527,16 @@ test("hardening: the server shuts down cleanly on SIGTERM", async () => {
   const code = await new Promise(resolve => { child.on("exit", resolve); child.kill("SIGTERM"); });
   assert.equal(code, 0, "exit code after SIGTERM");
 });
+
+test("matching breakdown: five factors with documented maxima that add up to the score", async () => {
+  const donor = await signup("bd1", "DONOR"), rec = await signup("bd2", "RECIPIENT");
+  const tag = "Brk" + run;
+  await addResource(donor.token, tag + "-item", 2, { category: "Books", location: "Chennai", availability: "Available now" });
+  const r = await call("GET", `/api/matching?category=Books&location=Chennai&quantity=4&urgency=HIGH&search=${tag}`, rec.token);
+  const m = r.body.matches.find(x => x.name === tag + "-item");
+  assert.deepEqual(m.breakdown.map(f => [f.factor, f.max]), [["category", 30], ["location", 20], ["quantity", 20], ["urgency", 15], ["availability", 15]]);
+  const sum = m.breakdown.reduce((total, f) => total + f.points, 0);
+  assert.ok(Math.abs(sum - m.matchScore) <= 1, `breakdown ${sum} vs score ${m.matchScore}`);
+  assert.equal(m.breakdown.find(f => f.factor === "quantity").points, 10, "2 of 4 units gives half of 20 points");
+  assert.equal(m.breakdown.find(f => f.factor === "category").points, 30);
+});
