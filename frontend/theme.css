@@ -105,3 +105,32 @@ label{color:var(--ink);font-weight:600}
  .auth-card{padding:20px 16px}
  .auth-card .auth-tab{padding:10px 6px;font-size:14px}
 }
+
+
+/* Shared application layout corrections */
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:Inter,"Segoe UI",Arial,sans-serif}
+.main-content{min-width:0;width:auto;max-width:100%;flex:1 1 auto;overflow-x:hidden;padding:clamp(20px,3vw,40px)}
+.sidebar{flex:0 0 292px;width:292px;min-width:250px;position:relative}
+.main-content h1,.main-content h2,.main-content p{overflow-wrap:anywhere}
+.main-content form,.main-content fieldset,.main-content .form-card,.main-content .resource-form,.main-content .profile-form{min-width:0;max-width:100%}
+.main-content input,.main-content select,.main-content textarea,.main-content button{max-width:100%;min-width:0}
+.profile-form{width:100%;max-width:900px}
+.profile-form fieldset{width:100%;min-width:0}
+.profile-form input,.profile-form select{width:100%;min-width:0}
+.profile-form .form-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.nav-item{min-width:0;overflow-wrap:anywhere}
+.nav-item:focus,.nav-item:active{background:#ffbf72!important;color:#17221e!important;outline-color:#17221e}
+.nav-item:hover{background:#ffe2ad;color:#17221e}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #0f9d82;outline-offset:2px}
+button:active,.primary-btn:active,.secondary-btn:active,.auth-button:active{filter:brightness(.97)}
+@media(max-width:900px){
+ .sidebar{flex:0 0 230px;width:230px;min-width:210px}
+ .main-content{padding:22px 18px}
+}
+@media(max-width:680px){
+ .sidebar{width:100%;min-width:0;flex-basis:auto}
+ .main-content{width:100%;padding:18px 14px}
+ .profile-form .form-row{grid-template-columns:minmax(0,1fr)}
+ .coord-row{grid-template-columns:minmax(0,1fr)}
+}
