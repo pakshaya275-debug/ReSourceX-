@@ -31,10 +31,51 @@ function escapeHtml(str) {
 /* ==========================================================================
    BACKEND API CLIENT (API-backed data with explicit error states)
    ========================================================================== */
-const API_BASE_URL = window.RESOURCEX_API_URL || "https://resourcex-hjz9.onrender.com/api";
+const API_BASE_URL = window.RESOURCEX_API_URL;
 const AUTH_TOKEN_KEY = "resourceXAuthToken";
 const CURRENT_USER_KEY = "resourceXCurrentUser";
 let recipientMatchCache = new Map();
+
+// Records a recipient's view or request of a ranked recommendation (training data for future ranking work).
+// Uses keepalive so the event still sends when the page navigates away straight after the click.
+function logMatchEvent(resourceId, action) {
+    const user = getCurrentUser();
+    const token = getAuthToken();
+    if (!token || String(user?.role || "").toUpperCase() !== "RECIPIENT") return;
+    const ranked = Array.from(recipientMatchCache.values());
+    const index = ranked.findIndex(match => String(match.id) === String(resourceId));
+    if (index < 0) return;
+    fetch(API_BASE_URL + "/matching/events", {
+        method: "POST",
+        keepalive: true,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ resourceId: ranked[index].id, action, rank: index + 1, score: ranked[index].matchScore })
+    }).catch(() => {});
+}
+
+// Empty numeric inputs are left out of the request; anything else is sent as a number.
+function readCoordinate(inputId) {
+    const raw = document.getElementById(inputId)?.value;
+    if (raw === undefined || raw === null || String(raw).trim() === "") return undefined;
+    return Number(raw);
+}
+
+// Free hosting sleeps when idle, so the first request can take a long time. Say so instead of looking frozen.
+function warmUpApi() {
+    const banner = document.getElementById("serverStatus");
+    if (!banner) return;
+    const slow = setTimeout(() => {
+        banner.hidden = false;
+        banner.textContent = "Connecting to the ReSourceX server. The free server can take up to a minute to wake up the first time.";
+    }, 2500);
+    fetch(API_BASE_URL + "/health", { cache: "no-store" })
+        .then(() => { clearTimeout(slow); banner.hidden = true; })
+        .catch(() => {
+            clearTimeout(slow);
+            banner.hidden = false;
+            banner.textContent = "The server is not responding. Check your connection and try again in a minute.";
+        });
+}
 let adminResourceCache = new Map();
 let donorResourceCache = null;
 
@@ -249,32 +290,12 @@ function initAuth() {
         }
     });
     // Forgot Password Form Submit
+    // Self-service reset needs a server endpoint and an email service, which are not available yet.
+    // The form must never pretend to change a password (the old version only edited browser storage).
     document.getElementById("forgotPasswordForm")?.addEventListener("submit", function (e) {
         e.preventDefault();
-
-        const email = document.getElementById("resetEmail")?.value.trim().toLowerCase();
-        const newPassword = document.getElementById("resetNewPassword")?.value;
-        const confirmPassword = document.getElementById("resetConfirmPassword")?.value;
-
-        if (newPassword !== confirmPassword) {
-            alert("❌ Passwords do not match. Please re-enter your new password.");
-            return;
-        }
-
-        const accounts = getAccounts();
-        const userIndex = accounts.findIndex(u => u.email.toLowerCase() === email);
-
-        if (userIndex === -1) {
-            alert("❌ No registered account found with this email address. Please register a new account.");
-            return;
-        }
-
-        accounts[userIndex].password = newPassword;
-        saveAccounts(accounts);
-
-        alert("✅ Password updated successfully! Please sign in with your new password.");
+        alert("Password reset by email is not available yet. Please contact a ReSourceX administrator to reset your password.");
         document.getElementById("forgotPasswordForm").reset();
-
         forgotPasswordContainer?.classList.add("hidden");
         signInContainer?.classList.remove("hidden");
         signInTab?.classList.add("active");
@@ -424,6 +445,11 @@ function renderDonorMyResources() {
 /**
  * Renders the Incoming Requests table in donor dashboard
  */
+function chatButton(request) {
+    if (!window.ResourceXChat || request.status === "DECLINED") return "";
+    return `<button type="button" class="btn-chat" onclick="ResourceXChat.open('${request.id}')">💬 Message</button>`;
+}
+
 async function renderDonorRequests() {
     const requestsTableBody = document.getElementById("donorRequestsTableBody");
     const badgeEl = document.getElementById("donorPendingRequestsBadge");
@@ -451,7 +477,7 @@ async function renderDonorRequests() {
                             ? "Awaiting recipient confirmation"
                             : request.status === "COMPLETED" ? "Completed" : "No action";
                 const tr = document.createElement("tr");
-                tr.innerHTML = `<td><strong>${escapeHtml(resource.name || "Resource")}</strong></td><td>${escapeHtml(resource.category || "Other")}</td><td>${escapeHtml(String(resource.quantity || "-"))}</td><td>${escapeHtml(resource.location || "Not specified")}</td><td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span></td><td><div class="admin-actions">${action}</div></td>`;
+                tr.innerHTML = `<td><strong>${escapeHtml(resource.name || "Resource")}</strong></td><td>${escapeHtml(resource.category || "Other")}</td><td>${escapeHtml(String(resource.quantity || "-"))}</td><td>${escapeHtml(resource.location || "Not specified")}</td><td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span></td><td><div class="admin-actions">${action}${chatButton(request)}</div></td>`;
                 requestsTableBody.appendChild(tr);
             });
             return;
@@ -761,7 +787,9 @@ function initAddResource() {
                         location: location || "Not specified",
                         availability: availability || "Available now",
                         description: description || "No description provided.",
-                        specifications: specifications || "Standard"
+                        specifications: specifications || "Standard",
+                        latitude: readCoordinate("resourceLatitude"),
+                        longitude: readCoordinate("resourceLongitude")
                     }
                 });
                 alert("🎉 Resource added successfully!");
@@ -816,6 +844,7 @@ function initRecipientDashboard() {
     const matchingStatus = document.getElementById("matchingStatus");
     let matchingRequestId = 0;
     let matchingDebounceTimer;
+    document.addEventListener("rx:location", () => scheduleRecipientMatch());
 
     async function renderRecipientGrid() {
         const searchTerm = (searchInput?.value || "").toLowerCase().trim();
@@ -827,6 +856,8 @@ function initRecipientDashboard() {
         if (locationInput?.value.trim()) query.set("location", locationInput.value.trim());
         if (quantityInput?.value) query.set("quantity", quantityInput.value);
         if (urgencySelect?.value) query.set("urgency", urgencySelect.value);
+        const seeker = window.ResourceXMap ? window.ResourceXMap.seekerCoords() : null;
+        if (seeker) { query.set("latitude", seeker.latitude); query.set("longitude", seeker.longitude); }
 
         if (matchingStatus) {
             matchingStatus.className = "matching-status loading";
@@ -839,6 +870,7 @@ function initRecipientDashboard() {
             if (requestId !== matchingRequestId) return;
             const matches = Array.isArray(data.matches) ? data.matches : [];
             recipientMatchCache = new Map(matches.map(match => [String(match.id), match]));
+            if (window.ResourceXMap) window.ResourceXMap.render(matches);
             resourceList.innerHTML = "";
             if (matchingStatus) {
                 matchingStatus.className = "matching-status";
@@ -937,7 +969,7 @@ async function renderRecipientRequests() {
                     ? `<button type="button" class="btn-approve" onclick="completeApiRequest('${request.id}')">Confirm received</button>`
                     : request.status === "COMPLETED" ? "Receipt confirmed" : "";
                 const tr = document.createElement("tr");
-                tr.innerHTML = `<td><strong>${escapeHtml(resource.name || "Resource")}</strong></td><td>${escapeHtml(resource.category || "Other")}</td><td>${escapeHtml(String(resource.quantity || "-"))}</td><td>${escapeHtml(resource.location || "Not specified")}</td><td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span> ${action}</td>`;
+                tr.innerHTML = `<td><strong>${escapeHtml(resource.name || "Resource")}</strong></td><td>${escapeHtml(resource.category || "Other")}</td><td>${escapeHtml(String(resource.quantity || "-"))}</td><td>${escapeHtml(resource.location || "Not specified")}</td><td><span class="status ${(request.status || "").toLowerCase()}">${escapeHtml(request.status)}</span> ${action}${chatButton(request)}</td>`;
                 tableBody.appendChild(tr);
             });
             return;
@@ -1015,6 +1047,7 @@ function viewResource(resourceId) {
     }
 
     localStorage.setItem("selectedResource", JSON.stringify(resource));
+    logMatchEvent(resourceId, "view");
     window.location.href = "resource_details.html";
 }
 
@@ -1031,6 +1064,7 @@ function requestResource(resourceId) {
     }
 
     localStorage.setItem("selectedResource", JSON.stringify(resource));
+    logMatchEvent(resourceId, "request");
     window.location.href = "request_confirmation.html";
 }
 
@@ -1406,6 +1440,7 @@ function adminDeleteResource(resourceId) {
 
 function initializeApp() {
     initAuth();
+    warmUpApi();
     document.querySelectorAll("a.logout").forEach(logoutLink => {
         logoutLink.addEventListener("click", function () {
             clearAuthSession();

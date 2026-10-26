@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS users (
     CHECK (location_privacy IN ('exact', 'approximate', 'none')),
   organisation_verified BOOLEAN NOT NULL DEFAULT FALSE,
   profile_picture_url TEXT,
+  address_line VARCHAR(200),
+  city VARCHAR(100),
+  state VARCHAR(100),
+  country VARCHAR(100),
+  postal_code VARCHAR(20),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -204,3 +209,16 @@ CREATE TABLE IF NOT EXISTS organisation_verifications (
 CREATE INDEX IF NOT EXISTS organisation_verifications_user_idx ON organisation_verifications (user_id);
 
 CREATE INDEX IF NOT EXISTS organisation_verifications_verified_idx ON organisation_verifications (verified_at DESC);
+
+-- Match events (phase 6): views and requests of ranked recommendations.
+CREATE TABLE IF NOT EXISTS match_events (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  resource_id BIGINT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  action VARCHAR(20) NOT NULL CHECK (action IN ('view', 'request')),
+  rank_position INTEGER,
+  match_score INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS match_events_user_idx ON match_events (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS match_events_resource_idx ON match_events (resource_id);

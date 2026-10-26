@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | ReSourceX</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-logo"><span>↻</span> ReSource<span>X</span></div>
+        <nav class="sidebar-nav">
+            <a href="recipient_dashboard.html" class="nav-item">🔍<span>Find Resources</span></a>
+            <a href="add_resource.html" class="nav-item">➕<span>Add Resource</span></a>
+            <a href="exchanges.html" class="nav-item">🔄<span>Resource Exchange</span></a>
+            <a href="profile.html" class="nav-item active">👤<span>My Profile</span></a>
+            <a href="index.html" class="nav-item logout"
+               onclick="localStorage.removeItem('resourceXAuthToken');localStorage.removeItem('resourceXCurrentUser');">🚪<span>Logout</span></a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h1>My Profile</h1>
+            <p>Your contact details and address. Phone and exact address are shared only with people you have an approved request or exchange with.</p>
+        </header>
+
+        <p id="profileStatus" class="matching-status" role="status"></p>
+
+        <form id="profileForm" class="profile-form" novalidate>
+            <fieldset>
+                <legend>Account</legend>
+                <p><strong>Email:</strong> <span id="profileEmail">Loading…</span></p>
+                <p><strong>Role:</strong> <span id="profileRole"></span></p>
+            </fieldset>
+
+            <fieldset>
+                <legend>Personal details</legend>
+                <div class="form-row">
+                    <label>First name <input id="firstName" required maxlength="80"></label>
+                    <label>Last name <input id="lastName" required maxlength="80"></label>
+                </div>
+                <label>Phone number <input id="phoneNumber" type="tel" maxlength="20" placeholder="+91 98765 43210"></label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Organisation (optional)</legend>
+                <label>Organisation name <input id="organisationName" maxlength="160" placeholder="e.g. Green Valley College"></label>
+                <label>Organisation type
+                    <select id="organisationType">
+                        <option value="">Individual / not applicable</option>
+                        <option value="college">College</option>
+                        <option value="ngo">NGO</option>
+                        <option value="company">Company</option>
+                        <option value="community_organisation">Community organisation</option>
+                    </select>
+                </label>
+                <p id="verificationStatus" class="field-hint"></p>
+            </fieldset>
+
+            <fieldset>
+                <legend>Address</legend>
+                <label>Street address <input id="addressLine" maxlength="200"></label>
+                <div class="form-row">
+                    <label>City <input id="city" maxlength="100"></label>
+                    <label>State / region <input id="state" maxlength="100"></label>
+                </div>
+                <div class="form-row">
+                    <label>Country <input id="country" maxlength="100"></label>
+                    <label>Postal code <input id="postalCode" maxlength="20"></label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Map position</legend>
+                <p class="field-hint">Used to show you on the map and to rank resources by distance. Other users see a position rounded to about 1 km.</p>
+                <div class="coord-row">
+                    <input type="number" step="any" id="latitude" placeholder="Latitude" aria-label="Latitude">
+                    <input type="number" step="any" id="longitude" placeholder="Longitude" aria-label="Longitude">
+                </div>
+                <button type="button" class="secondary-btn" data-use-location="latitude,longitude,locationStatus">📍 Use my current location</button>
+                <span id="locationStatus" class="field-hint" role="status"></span>
+            </fieldset>
+
+            <button type="submit" class="primary-btn" id="saveProfile">Save profile</button>
+        </form>
+    </main>
+</div>
+
+<script src="config.js?v=20261026"></script>
+    <script>
+(() => {
+    const API = window.RESOURCEX_API_URL;
+    const token = localStorage.getItem("resourceXAuthToken");
+    if (!token) { window.location.href = "index.html"; return; }
+    const $ = id => document.getElementById(id);
+    const status = (text, kind) => { const el = $("profileStatus"); el.className = "matching-status " + (kind || ""); el.textContent = text; };
+
+    async function api(path, options = {}) {
+        const res = await fetch(API + path, {
+            method: options.method || "GET",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: options.body ? JSON.stringify(options.body) : undefined
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Request failed (" + res.status + ")");
+        return data;
+    }
+    const text = (id, value) => { $(id).value = value == null ? "" : value; };
+
+    function fill(p) {
+        $("profileEmail").textContent = p.email;
+        $("profileRole").textContent = String(p.role).toLowerCase();
+        text("firstName", p.firstName); text("lastName", p.lastName); text("phoneNumber", p.phoneNumber);
+        text("organisationName", p.organisationName); $("organisationType").value = p.organisationType || "";
+        text("addressLine", p.addressLine); text("city", p.city); text("state", p.state);
+        text("country", p.country); text("postalCode", p.postalCode);
+        text("latitude", p.latitude); text("longitude", p.longitude);
+        $("verificationStatus").textContent = p.organisationName
+            ? (p.organisationVerified ? "✔ Verified by a ReSourceX administrator." : "Not verified yet. An administrator must verify this organisation.")
+            : "";
+    }
+
+    $("profileForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = $("saveProfile");
+        button.disabled = true;
+        const body = {
+            firstName: $("firstName").value.trim(),
+            lastName: $("lastName").value.trim(),
+            phoneNumber: $("phoneNumber").value.trim(),
+            organisationName: $("organisationName").value.trim(),
+            organisationType: $("organisationType").value,
+            addressLine: $("addressLine").value.trim(),
+            city: $("city").value.trim(),
+            state: $("state").value.trim(),
+            country: $("country").value.trim(),
+            postalCode: $("postalCode").value.trim(),
+            latitude: $("latitude").value === "" ? null : Number($("latitude").value),
+            longitude: $("longitude").value === "" ? null : Number($("longitude").value)
+        };
+        try {
+            const data = await api("/profile", { method: "PUT", body });
+            fill(data.profile);
+            status("Profile saved.", "success");
+        } catch (error) {
+            status(error.message, "error");
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    api("/profile").then(data => fill(data.profile)).catch(error => status(error.message, "error"));
+})();
+</script>
+<script src="map.js?v=20261025b"></script>
+<script src="notifications.js?v=20261025"></script>
+</body>
+</html>

@@ -8,6 +8,7 @@
     <title>Recipient Dashboard | ReSourceX</title>
 
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 
 <body>
@@ -53,6 +54,11 @@
                     <span>Settings</span>
                 </a>
 
+                <a href="profile.html" class="nav-item">
+                    👤
+                    <span>My Profile</span>
+                </a>
+
                 <a href="index.html" class="nav-item logout">
                     🚪
                     <span>Logout</span>
@@ -65,6 +71,15 @@
 
         <!-- MAIN CONTENT -->
         <main class="main-content">
+
+            <div class="mode-strip" role="note">
+                <strong>Three ways to share:</strong>
+                <span>🎁 Donate for free</span>
+                <span>🔄 Exchange one resource for another</span>
+                <span>🤝 Request what you need</span>
+                <a href="exchanges.html">Open Resource Exchange →</a>
+            </div>
+
 
             <!-- TOP HEADER -->
             <header class="dashboard-header" id="findResourcesSection">
@@ -108,7 +123,7 @@
                     <input
                         type="text"
                         id="resourceSearch"
-                        placeholder="Search by resource name, description, or location..."
+                        placeholder="Search by name, category, location or description (e.g. eng, book, lab)"
                     >
 
                 </div>
@@ -161,6 +176,10 @@
                 <div class="filter-box">
                     <label for="recipientLocation">Pickup Location</label>
                     <input type="text" id="recipientLocation" placeholder="e.g. Vellore">
+                    <button type="button" class="secondary-btn" data-use-location="recipientLatitude,recipientLongitude,locationStatus">📍 Use my location</button>
+                    <span id="locationStatus" class="field-hint" role="status"></span>
+                    <input type="hidden" id="recipientLatitude">
+                    <input type="hidden" id="recipientLongitude">
                 </div>
 
                 <div class="filter-box">
@@ -196,6 +215,8 @@
                 </div>
 
                 <p id="matchingStatus" class="matching-status" role="status"></p>
+                <div id="resourceMap" class="resource-map" role="region" aria-label="Map of matching resources" hidden></div>
+                <p id="mapNote" class="map-note"></p>
 
 
                 <div
@@ -272,8 +293,12 @@
     </div>
 
 
-    <script src="script.js?v=20260912c"></script>
+    <script src="config.js?v=20261026"></script>
+    <script src="script.js?v=20261025b"></script>
+    <script src="map.js?v=20261025b"></script>
 
+    <script src="notifications.js?v=20261025"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 
 </html>

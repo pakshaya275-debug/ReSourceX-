@@ -17,3 +17,7 @@ Thumbs.db
 backend/node_modules/
 npm-debug.log*
 
+
+# Local tooling caches and generated patch files
+.aider*
+/resourcex-*.patch
