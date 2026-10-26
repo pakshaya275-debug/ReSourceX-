@@ -59,3 +59,49 @@ label{color:var(--ink);font-weight:600}
 .chip[aria-pressed=true]{background:var(--orange)}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+
+/* Final responsive fixes: preserve the original green branding and keep content readable. */
+.brand-panel{width:58%;flex:1 1 58%;min-width:0;color:#fff}
+.brand-panel .brand-content{width:100%;max-width:680px}
+.brand-panel h1,.brand-panel .logo,.brand-panel .feature strong{color:#fff}
+.brand-panel .brand-description,.brand-panel .feature p,.brand-panel .brand-footer{color:rgba(255,255,255,.86)}
+.brand-panel .brand-content h1 span{color:#a9efd6}
+.brand-panel .feature-list{gap:14px}
+.brand-panel .feature{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;
+  min-height:76px;background:rgba(255,255,255,.09)!important;
+  color:#fff;border:1px solid rgba(255,255,255,.24)!important;
+  border-radius:14px!important;box-shadow:none!important;
+}
+.brand-panel .feature-icon{flex:0 0 42px;width:42px;height:42px;color:#fff;background:rgba(255,255,255,.13);border-radius:10px}
+.brand-panel .feature strong{font-size:15px;line-height:1.35}
+.brand-panel .feature p{margin-top:3px;font-size:13px;line-height:1.45}
+.auth-panel{width:42%;flex:0 1 42%;min-width:0;padding:clamp(18px,3vw,44px);overflow-x:hidden}
+.auth-card{width:100%;max-width:480px;min-width:0;padding:clamp(20px,3vw,42px);margin:0 auto;overflow-wrap:anywhere}
+.auth-card .auth-tabs{gap:8px}
+.auth-card .auth-tab{color:#4b5563;background:#f3f4f6;border:1px solid #cbd5e1!important;box-shadow:none!important}
+.auth-card .auth-tab.active{color:#17221e;background:#ffbf72;border-color:#17221e!important}
+.auth-card a,.auth-card #forgotPasswordLink{color:#075d43!important;text-decoration:underline;text-underline-offset:3px}
+.auth-card .demo-text{color:#5b6275}
+.auth-card input,.auth-card select{max-width:100%;min-width:0}
+.rx-bell{top:auto!important;right:18px!important;bottom:18px!important}
+.rx-panel{top:auto!important;bottom:72px!important;right:18px!important}
+@media(max-width:900px){
+ .auth-page{flex-direction:column}
+ .brand-panel,.auth-panel{width:100%;flex:1 1 auto;min-height:auto}
+ .brand-panel{padding:34px 24px}
+ .brand-panel .logo{margin-bottom:32px}
+ .brand-panel .brand-content h1{font-size:clamp(36px,7vw,54px);margin-bottom:18px}
+ .brand-panel .brand-description{margin-bottom:24px}
+ .brand-panel .brand-footer{margin-top:28px}
+ .auth-panel{padding:28px 18px 40px}
+ .auth-card{max-width:560px}
+}
+@media(max-width:480px){
+ .brand-panel{padding:26px 18px}
+ .brand-panel .feature{padding:12px;min-height:68px}
+ .auth-panel{padding:20px 12px 32px}
+ .auth-card{padding:20px 16px}
+ .auth-card .auth-tab{padding:10px 6px;font-size:14px}
+}
