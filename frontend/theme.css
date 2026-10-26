@@ -1,0 +1,61 @@
+/* ReSourceX theme: bold, friendly and uncluttered. Loaded after style.css on every page,
+   so it changes colours and shapes across the whole site without touching page markup. */
+:root{
+  --cream:#fffdf6; --panel:#fff3d6; --ink:#141b2d; --coral:#ff4d5e; --orange:#ffbf72; --orange-dark:#f5a54a;
+  --mint:#5fe3a6; --field:#e6eeff; --tan:#f3dba9; --paper:#ffffff; --sub:#5b6275;
+  --primary:var(--orange); --primary-dark:var(--orange-dark); --secondary:var(--mint);
+  --light-green:var(--panel); --mint:var(--cream); --dark:var(--ink); --text:#1f2535; --muted:var(--sub);
+  --border:var(--ink); --white:#ffffff;
+}
+html,body{background:var(--cream)!important;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+h1,h2,h3,h4{color:var(--ink);font-weight:800;letter-spacing:-.02em;line-height:1.15}
+h1{font-size:clamp(28px,4vw,40px)}
+p{color:var(--text)}
+a{color:var(--ink)}
+
+/* Buttons: solid outline + offset shadow, press down on click */
+button,.primary-btn,.secondary-btn,.auth-button,.view-details-btn,.request-btn,.action-btn,.btn-chat{
+  border:2px solid var(--ink)!important;border-radius:12px!important;box-shadow:3px 3px 0 var(--ink);
+  font-weight:700;cursor:pointer;transition:transform .08s ease, box-shadow .08s ease;
+}
+button:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+button:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+button:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.primary-btn,.auth-button,.request-btn{background:var(--orange)!important;color:var(--ink)!important}
+.secondary-btn,.view-details-btn{background:#fff!important;color:var(--ink)!important}
+.logout{color:var(--coral)!important}
+
+/* Inputs: light blue fields with a strong outline, like the Gitingest input */
+input,select,textarea{border:2px solid var(--ink)!important;border-radius:12px!important;background:var(--field);color:var(--ink);padding:10px 12px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--coral);outline-offset:1px}
+input::placeholder,textarea::placeholder{color:#7b8296}
+label{color:var(--ink);font-weight:600}
+
+/* Cards and panels: outlined, with a hard shadow */
+.resource-card,.dashboard-section,.stat-card,.auth-card,.form-card,.card,.panel,.exchange-card,.modal-content,.feature,.summary-card,.request-card,.empty-state{
+  background:#fff!important;border:2px solid var(--ink)!important;border-radius:16px!important;box-shadow:6px 6px 0 var(--ink);
+}
+.resource-card:hover{transform:translate(-1px,-1px)}
+
+/* Sidebar: cream panel with a strong divider; active item is highlighted in orange */
+.sidebar{background:var(--panel)!important;border-right:2px solid var(--ink)!important}
+.sidebar-logo{color:var(--ink);font-weight:800}
+.sidebar-logo span{color:var(--coral)}
+.nav-item{color:var(--ink);border-radius:12px;font-weight:600}
+.nav-item:hover{background:#fff}
+.nav-item.active{background:var(--orange);border:2px solid var(--ink)}
+
+/* Status tags and alerts */
+.matching-status.loading{color:var(--sub)}
+.matching-status.error,.server-status{background:#ffe3e6;border:2px solid var(--ink);color:var(--ink);border-radius:12px}
+.mode-strip{background:var(--panel)!important;border:2px solid var(--ink)!important;border-radius:14px!important;box-shadow:4px 4px 0 var(--ink)}
+.mode-strip a{color:var(--ink);background:var(--orange);border:2px solid var(--ink);padding:4px 10px;border-radius:10px;text-decoration:none}
+
+/* Chips: example searches (Gitingest style) */
+.chip-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 4px}
+.chip-row span{font-size:14px;color:var(--sub)}
+.chip{background:var(--tan);border:2px solid var(--ink);border-radius:10px;padding:6px 12px;font-weight:600;box-shadow:3px 3px 0 var(--ink);cursor:pointer}
+.chip:hover{transform:translate(-1px,-1px)}
+.chip[aria-pressed=true]{background:var(--orange)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

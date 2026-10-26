@@ -249,7 +249,7 @@ function initAuth() {
             const destinationRole = (data.user?.role || selectedRole).toLowerCase();
             alert(`Welcome back, ${data.user?.firstName || "there"}!`);
             if (destinationRole === "donor") window.location.href = "donor_dashboard.html";
-            else if (destinationRole === "recipient") window.location.href = "recipient_dashboard.html";
+            else if (destinationRole === "recipient") window.location.href = "discover.html";
             else if (destinationRole === "admin") window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login failed", error);
@@ -793,7 +793,7 @@ function initAddResource() {
                     }
                 });
                 alert("🎉 Resource added successfully!");
-                window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "recipient_dashboard.html" : "donor_dashboard.html";
+                window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "discover.html" : "donor_dashboard.html";
                 return;
             } catch (error) {
                 if (submitButton) submitButton.disabled = false;
@@ -821,7 +821,7 @@ function initAddResource() {
         saveResources(resources);
 
         alert("🎉 Resource added successfully!");
-        window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "recipient_dashboard.html" : "donor_dashboard.html";
+        window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "discover.html" : "donor_dashboard.html";
     });
 }
 
@@ -1091,7 +1091,7 @@ function initResourceDetails() {
 
     if (!selectedResource) {
         alert("No resource selected. Returning to available resources.");
-        window.location.href = "recipient_dashboard.html";
+        window.location.href = "discover.html";
         return;
     }
 
@@ -1140,7 +1140,7 @@ function initRequestConfirmation() {
 
     if (!selectedResource) {
         alert("No resource selected. Returning to recipient dashboard.");
-        window.location.href = "recipient_dashboard.html";
+        window.location.href = "discover.html";
         return;
     }
 
@@ -1168,7 +1168,7 @@ function initRequestConfirmation() {
                 });
                 localStorage.removeItem("selectedResource");
                 alert("🎉 Resource request submitted successfully! The donor has received your request.");
-                window.location.href = "recipient_dashboard.html";
+                window.location.href = "discover.html";
                 return;
             } catch (error) {
                 confirmBtn.disabled = false;
@@ -1183,7 +1183,7 @@ function initRequestConfirmation() {
         if (index === -1) {
             confirmBtn.disabled = false;
             alert("Resource not found in current listings.");
-            window.location.href = "recipient_dashboard.html";
+            window.location.href = "discover.html";
             return;
         }
 
@@ -1194,7 +1194,7 @@ function initRequestConfirmation() {
         localStorage.removeItem("selectedResource");
 
         alert("🎉 Resource request submitted successfully! The donor has received your request.");
-        window.location.href = "recipient_dashboard.html";
+        window.location.href = "discover.html";
     });
 }
 
