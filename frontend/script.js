@@ -253,7 +253,7 @@ function initAuth() {
             else if (destinationRole === "admin") window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login failed", error);
-            alert("❌ " + error.message);
+            alert(" " + error.message);
         }
     });
 
@@ -278,7 +278,7 @@ function initAuth() {
                 method: "POST",
                 body: { firstName, lastName, email, password, role: selectedRole, adminCode }
             });
-            alert("🎉 Account created successfully! Please sign in.");
+            alert(" Account created successfully! Please sign in.");
             document.getElementById("registerForm").reset();
             registerContainer?.classList.add("hidden");
             signInContainer?.classList.remove("hidden");
@@ -286,7 +286,7 @@ function initAuth() {
             signInTab?.classList.add("active");
         } catch (error) {
             console.error("Registration failed", error);
-            alert("❌ " + error.message);
+            alert(" " + error.message);
         }
     });
     // Forgot Password Form Submit
@@ -447,7 +447,7 @@ function renderDonorMyResources() {
  */
 function chatButton(request) {
     if (!window.ResourceXChat || request.status === "DECLINED") return "";
-    return `<button type="button" class="btn-chat" onclick="ResourceXChat.open('${request.id}')">💬 Message</button>`;
+    return `<button type="button" class="btn-chat" onclick="ResourceXChat.open('${request.id}')"> Message</button>`;
 }
 
 async function renderDonorRequests() {
@@ -506,7 +506,7 @@ async function renderDonorRequests() {
         requestsTableBody.innerHTML = `
             <tr>
                 <td colspan="6" class="empty-table-cell">
-                    🎉 No pending requests. All resources are currently available or allocated.
+                     No pending requests. All resources are currently available or allocated.
                 </td>
             </tr>
         `;
@@ -530,13 +530,13 @@ async function renderDonorRequests() {
                         type="button"
                         class="btn-approve"
                         onclick="donorApproveRequest('${res.id}')">
-                        ✓ Approve & Allocate
+                         Approve & Allocate
                     </button>
                     <button
                         type="button"
                         class="btn-decline"
                         onclick="donorDeclineRequest('${res.id}')">
-                        ✕ Decline
+                         Decline
                     </button>
                 </div>
             </td>
@@ -551,7 +551,7 @@ async function reviewApiRequest(requestId, action) {
         alert(action === "approve" ? "Request approved and allocated." : "Request declined.");
         await renderDonorRequests();
     } catch (error) {
-        alert("❌ " + error.message);
+        alert(" " + error.message);
     }
 }
 
@@ -561,7 +561,7 @@ async function handoverApiRequest(requestId) {
         alert("Resource marked as handed over.");
         await renderDonorRequests();
     } catch (error) {
-        alert("❌ " + error.message);
+        alert(" " + error.message);
     }
 }
 
@@ -609,7 +609,7 @@ function donorApproveRequest(resourceId) {
     resources[index].status = "Allocated";
     saveResources(resources);
 
-    alert("🤝 Request approved! The resource has been marked as Allocated.");
+    alert("+ Request approved! The resource has been marked as Allocated.");
     initDonorDashboard();
 }
 
@@ -628,7 +628,7 @@ function donorDeclineRequest(resourceId) {
     resources[index].status = "Available";
     saveResources(resources);
 
-    alert("🔄 Request declined. The resource is now Available again for community requests.");
+    alert("↻ Request declined. The resource is now Available again for community requests.");
     initDonorDashboard();
 }
 
@@ -641,10 +641,10 @@ function donorDeleteResource(resourceId) {
     if (getAuthToken() && Number.isSafeInteger(Number(resourceId))) {
         apiRequest(`/resources/${resourceId}`, { method: "DELETE" })
             .then(() => {
-                alert("🗑️ Resource deleted.");
+                alert("× Resource deleted.");
                 initLiveDonorDashboard();
             })
-            .catch(error => alert("❌ " + error.message));
+            .catch(error => alert(" " + error.message));
         return;
     }
 
@@ -652,7 +652,7 @@ function donorDeleteResource(resourceId) {
     resources = resources.filter(r => String(r.id) !== String(resourceId));
     saveResources(resources);
 
-    alert("🗑️ Resource deleted.");
+    alert("× Resource deleted.");
     initDonorDashboard();
 }
 
@@ -678,15 +678,15 @@ function renderDonorActivity() {
     }
 
     resources.forEach(item => {
-        let icon = "➕";
+        let icon = "+";
         let text = `${escapeHtml(item.name)} added to your surplus resources.`;
         const statusLower = (item.status || "").toLowerCase();
 
         if (statusLower === "requested") {
-            icon = "🔔";
+            icon = "";
             text = `A recipient has requested ${escapeHtml(item.name)}. Awaiting your approval.`;
         } else if (statusLower === "allocated") {
-            icon = "🤝";
+            icon = "+";
             text = `${escapeHtml(item.name)} was approved and successfully allocated.`;
         }
 
@@ -792,12 +792,12 @@ function initAddResource() {
                         longitude: readCoordinate("resourceLongitude")
                     }
                 });
-                alert("🎉 Resource added successfully!");
+                alert(" Resource added successfully!");
                 window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "discover.html" : "donor_dashboard.html";
                 return;
             } catch (error) {
                 if (submitButton) submitButton.disabled = false;
-                alert("❌ " + error.message);
+                alert(" " + error.message);
                 return;
             }
         }
@@ -820,7 +820,7 @@ function initAddResource() {
         resources.unshift(newResource);
         saveResources(resources);
 
-        alert("🎉 Resource added successfully!");
+        alert(" Resource added successfully!");
         window.location.href = String(getCurrentUser()?.role || "").toUpperCase() === "RECIPIENT" ? "discover.html" : "donor_dashboard.html";
     });
 }
@@ -889,7 +889,7 @@ function initRecipientDashboard() {
                 const reasons = (res.matchReasons || []).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
                 card.innerHTML = `
                     <div class="resource-card-header">
-                        <div class="resource-icon">📦</div>
+                        <div class="resource-icon">▣</div>
                         <span class="resource-category">${escapeHtml(res.category || "Other")}</span>
                     </div>
                     <div class="match-score">${escapeHtml(String(res.matchScore))}% Match</div>
@@ -1030,7 +1030,7 @@ async function completeApiRequest(requestId) {
         alert("Receipt confirmed. The request is complete.");
         await renderRecipientRequests();
     } catch (error) {
-        alert("❌ " + error.message);
+        alert(" " + error.message);
     }
 }
 
@@ -1167,12 +1167,12 @@ function initRequestConfirmation() {
                     body: { resourceId: Number(selectedResource.id), urgency, purpose }
                 });
                 localStorage.removeItem("selectedResource");
-                alert("🎉 Resource request submitted successfully! The donor has received your request.");
+                alert(" Resource request submitted successfully! The donor has received your request.");
                 window.location.href = "discover.html";
                 return;
             } catch (error) {
                 confirmBtn.disabled = false;
-                alert("❌ " + error.message);
+                alert(" " + error.message);
                 return;
             }
         }
@@ -1193,7 +1193,7 @@ function initRequestConfirmation() {
 
         localStorage.removeItem("selectedResource");
 
-        alert("🎉 Resource request submitted successfully! The donor has received your request.");
+        alert(" Resource request submitted successfully! The donor has received your request.");
         window.location.href = "discover.html";
     });
 }
@@ -1283,7 +1283,7 @@ async function adminDeleteUserApi(userId) {
         await apiRequest(`/admin/users/${userId}`, { method: "DELETE" });
         await initLiveAdminDashboard();
     } catch (error) {
-        alert("❌ " + error.message);
+        alert(" " + error.message);
     }
 }
 
@@ -1293,7 +1293,7 @@ async function adminDeleteResourceApi(resourceId) {
         await apiRequest(`/resources/${resourceId}`, { method: "DELETE" });
         await initLiveAdminDashboard();
     } catch (error) {
-        alert("❌ " + error.message);
+        alert(" " + error.message);
     }
 }
 
