@@ -34,10 +34,10 @@
     }
 
     var css = "\
-    .rx-bell{position:fixed;top:14px;right:18px;z-index:9000;width:44px;height:44px;border-radius:50%;border:1px solid #dce7e2;background:#fff;color:#087f5b;font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12)}\
+    .rx-bell{position:fixed;top:auto;bottom:18px;right:18px;z-index:9000;width:44px;height:44px;border-radius:50%;border:1px solid #dce7e2;background:#fff;color:#087f5b;font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12)}\
     .rx-bell:hover{background:#e9f7f1}.rx-bell:focus-visible{outline:3px solid #0f9d82;outline-offset:2px}\
     .rx-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#d6336c;color:#fff;font-size:12px;font-weight:700;line-height:20px;text-align:center}\
-    .rx-panel{position:fixed;top:66px;right:18px;z-index:9001;width:min(380px,calc(100vw - 24px));max-height:70vh;display:none;flex-direction:column;background:#fff;border:1px solid #dce7e2;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);font-family:Inter,'Segoe UI',sans-serif;color:#17221e}\
+    .rx-panel{position:fixed;top:auto;bottom:72px;right:18px;z-index:9001;width:min(380px,calc(100vw - 24px));max-height:70vh;display:none;flex-direction:column;background:#fff;border:1px solid #dce7e2;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);font-family:Inter,'Segoe UI',sans-serif;color:#17221e}\
     .rx-panel.open{display:flex}\
     .rx-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #dce7e2;font-weight:700}\
     .rx-link{background:none;border:0;color:#087f5b;cursor:pointer;font-size:13px;font-weight:600}\
