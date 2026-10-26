@@ -1851,7 +1851,7 @@ button:disabled {
 }
 
 .match-reasons li::before {
-    content: "✓";
+    content: "";
     margin-right: 7px;
     color: #168357;
     font-weight: 700;
