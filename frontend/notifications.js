@@ -91,7 +91,7 @@
     function buildBell() {
         var style = document.createElement("style"); style.textContent = css; document.head.appendChild(style);
         bell = document.createElement("button");
-        bell.type = "button"; bell.className = "rx-bell"; bell.innerHTML = "🔔"; bell.setAttribute("aria-haspopup", "true");
+        bell.type = "button"; bell.className = "rx-bell"; bell.innerHTML = ""; bell.setAttribute("aria-haspopup", "true");
         badge = document.createElement("span"); badge.className = "rx-badge"; badge.style.display = "none"; bell.appendChild(badge);
         panel = document.createElement("div"); panel.className = "rx-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "Notifications");
         panel.innerHTML = '<div class="rx-head"><span>Notifications</span><button type="button" class="rx-link" data-act="all">Mark all as read</button></div><ul class="rx-list"></ul>';
@@ -115,7 +115,7 @@
     }
     function buildChat() {
         chat.modal = document.createElement("div"); chat.modal.className = "rx-modal";
-        chat.modal.innerHTML = '<div class="rx-chat" role="dialog" aria-modal="true" aria-label="Conversation"><div class="rx-head"><span>Conversation about this request</span><button type="button" class="rx-link" data-act="close">Close ✕</button></div><div class="rx-chat-body" aria-live="polite"></div><div class="rx-error" hidden></div><form class="rx-chat-form"><input type="text" maxlength="2000" placeholder="Write a message (for example, pickup time)" aria-label="Message"><button class="rx-send" type="submit">Send</button></form></div>';
+        chat.modal.innerHTML = '<div class="rx-chat" role="dialog" aria-modal="true" aria-label="Conversation"><div class="rx-head"><span>Conversation about this request</span><button type="button" class="rx-link" data-act="close">Close </button></div><div class="rx-chat-body" aria-live="polite"></div><div class="rx-error" hidden></div><form class="rx-chat-form"><input type="text" maxlength="2000" placeholder="Write a message (for example, pickup time)" aria-label="Message"><button class="rx-send" type="submit">Send</button></form></div>';
         document.body.appendChild(chat.modal);
         chat.body = chat.modal.querySelector(".rx-chat-body"); chat.input = chat.modal.querySelector("input");
         chat.error = chat.modal.querySelector(".rx-error"); chat.send = chat.modal.querySelector(".rx-send");
