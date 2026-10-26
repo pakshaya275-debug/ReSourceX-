@@ -1,0 +1,115 @@
+diff a/backend/server.js b/backend/server.js	(rejected hunks)
+@@ -582,6 +582,13 @@ function availabilityLabel(days) {
+   if (days !== null) return "Available later";
+   return "Availability needs review";
+ }
++const MATCH_FACTORS = [
++  { key: "category", label: "Category", max: 30 },
++  { key: "location", label: "Location", max: 20 },
++  { key: "quantity", label: "Quantity", max: 20 },
++  { key: "urgency", label: "Urgency", max: 15 },
++  { key: "availability", label: "Availability", max: 15 }
++];
+ function matchingScore(resource, criteria) {
+   const requiredQuantity = positiveInt(criteria.quantity);
+   const requestedUrgency = criteria.urgency ? urgencyOf(criteria.urgency) : null;
+@@ -589,16 +596,18 @@ function matchingScore(resource, criteria) {
+   const seekerLat = parseCoordinate(criteria.latitude, 90), seekerLon = parseCoordinate(criteria.longitude, 180);
+   let score = 0;
+   const reasons = [];
++  const factors = {};
+ 
+   if (criteria.category) {
+     if (text(resource.category).toLowerCase() === text(criteria.category).toLowerCase()) {
+-      score += 30;
++      score += 30; factors.category = 30;
+       reasons.push("Same category");
+     } else {
++      factors.category = 0;
+       reasons.push("Different category");
+     }
+   } else {
+-    score += 30;
++    score += 30; factors.category = 30;
+     reasons.push("Category not specified");
+   }
+ 
+@@ -606,34 +615,34 @@ function matchingScore(resource, criteria) {
+   if (hasDistance) {
+     // Distance uses the owner's rounded coordinates, the same precision recipients are shown on the map.
+     const km = distanceKm(seekerLat, seekerLon, round2(resource.latitude), round2(resource.longitude));
+-    if (km <= 5) { score += 20; reasons.push("Nearby: about " + km.toFixed(1) + " km away"); }
+-    else if (km <= 25) { score += 14; reasons.push("Within 25 km: about " + km.toFixed(1) + " km away"); }
+-    else if (km <= 100) { score += 8; reasons.push("About " + Math.round(km) + " km away; check transport"); }
+-    else { score += 3; reasons.push("Far away: about " + Math.round(km) + " km"); }
++    if (km <= 5) { score += 20; factors.location = 20; reasons.push("Nearby: about " + km.toFixed(1) + " km away"); }
++    else if (km <= 25) { score += 14; factors.location = 14; reasons.push("Within 25 km: about " + km.toFixed(1) + " km away"); }
++    else if (km <= 100) { score += 8; factors.location = 8; reasons.push("About " + Math.round(km) + " km away; check transport"); }
++    else { score += 3; factors.location = 3; reasons.push("Far away: about " + Math.round(km) + " km"); }
+   } else if (criteria.location) {
+     const resourceLocation = text(resource.location).toLowerCase();
+     const requestedLocation = text(criteria.location).toLowerCase();
+     if (resourceLocation === requestedLocation) {
+-      score += 20;
++      score += 20; factors.location = 20;
+       reasons.push("Same location");
+     } else if (resourceLocation.includes(requestedLocation) || requestedLocation.includes(resourceLocation)) {
+-      score += 12;
++      score += 12; factors.location = 12;
+       reasons.push("Nearby location");
+     } else {
+-      score += 5;
++      score += 5; factors.location = 5;
+       reasons.push("Different location; verify pickup distance");
+     }
+   } else {
+-    score += 20;
++    score += 20; factors.location = 20;
+     reasons.push("Location not specified");
+   }
+ 
+   if (requiredQuantity) {
+     const quantityScore = Math.min(1, Number(resource.quantity) / requiredQuantity) * 20;
+-    score += quantityScore;
++    score += quantityScore; factors.quantity = quantityScore;
+     reasons.push(resource.quantity >= requiredQuantity ? "Enough quantity available" : "Partial quantity available");
+   } else {
+-    score += 20;
++    score += 20; factors.quantity = 20;
+     reasons.push("Quantity requirement not specified");
+   }
+ 
+@@ -643,18 +652,20 @@ function matchingScore(resource, criteria) {
+       : requestedUrgency === 3
+         ? (resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 7 ? 12 : 8)
+         : (resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 14 ? 14 : 12);
+-    score += urgencyScore;
++    score += urgencyScore; factors.urgency = urgencyScore;
+     reasons.push(requestedUrgency >= 4 && resourceDays === 0 ? "Suitable for urgent needs" : "Urgency considered");
+   } else {
+-    score += 15;
++    score += 15; factors.urgency = 15;
+     reasons.push("Urgency not specified");
+   }
+ 
+   const availabilityScore = resourceDays === 0 ? 15 : resourceDays !== null && resourceDays <= 2 ? 12 : resourceDays !== null && resourceDays <= 7 ? 9 : resourceDays !== null ? 5 : 3;
+-  score += availabilityScore;
++  score += availabilityScore; factors.availability = availabilityScore;
+   reasons.push(availabilityLabel(resourceDays));
+ 
+-  return { matchScore: Math.round(score), matchReasons: reasons };
++  // Per-factor breakdown, so the interface can show why a resource scored as it did and re-rank when priorities change.
++  const breakdown = MATCH_FACTORS.map(f => ({ factor: f.key, label: f.label, points: Math.round((factors[f.key] || 0) * 10) / 10, max: f.max }));
++  return { matchScore: Math.round(score), matchReasons: reasons, breakdown };
+ }
+ app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
+   const params = [req.user.id]; const conditions = ["r.status = 'AVAILABLE' AND r.donor_id <> $1"];
+@@ -663,7 +674,7 @@ app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRo
+   if (req.query.search) searchConditions(req.query.search, params, conditions, "r");
+   const result = await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE " + conditions.join(" AND ") + " ORDER BY r.created_at DESC", params);
+   const matches = result.rows.map(item => Object.assign(resourceView(item, req.user.id), matchingScore(item, req.query))).sort((a, b) => b.matchScore - a.matchScore);
+-  return res.json({ matches, scoring: { category: 30, location: 20, quantity: 20, urgency: 15, availability: 15 } });
++  return res.json({ matches, scoring: Object.fromEntries(MATCH_FACTORS.map(f => [f.key, f.max])) });
+ }));
+ 
+ 

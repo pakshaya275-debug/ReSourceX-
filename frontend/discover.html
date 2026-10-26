@@ -6,9 +6,9 @@
 <title>Smart Match | ReSourceX</title>
 <style>
   :root{
-    --paper:#f5f1e8; --card:#fffdf8; --ink:#1f1c17; --muted:#6d665a; --line:#e2dacb;
-    --accent:#b4502a; --accent-ink:#fff; --ok:#2e5e4e;
-    --f-category:#b4502a; --f-location:#2e5e4e; --f-quantity:#c99a2e; --f-urgency:#7b4a7d; --f-availability:#4a6a8a;
+    --paper:#fffdf6; --card:#ffffff; --ink:#141b2d; --muted:#5b6275; --line:#141b2d;
+    --accent:#ff4d5e; --accent-ink:#141b2d; --ok:#2e5e4e;
+    --f-category:#ff4d5e; --f-location:#5fe3a6; --f-quantity:#ffbf72; --f-urgency:#9b7bd8; --f-availability:#5b8def;
     --serif:Georgia,"Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   *{box-sizing:border-box} html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
@@ -25,7 +25,10 @@
   @media (max-width:880px){.wrap{grid-template-columns:1fr}}
   h1{font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.15;margin:0 0 6px}
   .lede{color:var(--muted);margin:0 0 22px;max-width:60ch}
-  aside.needs{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;align-self:start;position:sticky;top:90px}
+  aside.needs{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:20px;align-self:start;position:sticky;top:90px;box-shadow:6px 6px 0 var(--ink)}
+  #q{font-size:18px;padding:14px 16px}
+  .btn{border:2px solid var(--ink)!important;box-shadow:3px 3px 0 var(--ink);border-radius:12px!important;font-weight:700}
+  .btn.primary{background:var(--orange)!important;color:var(--ink)!important}
   .needs h2{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 12px}
   .field{display:grid;gap:5px;margin-bottom:12px}
   .field label,.legend-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
@@ -89,9 +92,19 @@
 </header>
 
 <main class="wrap">
-  <aside class="needs" aria-label="Your needs">
-    <h2>What do you need?</h2>
+  <aside class="needs" aria-label="Search">
+    <h2>Search surplus resources</h2>
+    <p class="meta" style="margin:0 0 12px">Type a word, or tap an example. Short words such as "eng" or "lab" work too.</p>
     <form id="needs" autocomplete="off">
+      <div class="chip-row" id="chips" role="group" aria-label="Example searches">
+        <span>Try:</span>
+        <button type="button" class="chip" data-chip="Books" aria-pressed="false">Books</button>
+        <button type="button" class="chip" data-chip="Engineering" aria-pressed="false">Engineering</button>
+        <button type="button" class="chip" data-chip="Equipment" aria-pressed="false">Equipment</button>
+        <button type="button" class="chip" data-chip="Furniture" aria-pressed="false">Furniture</button>
+        <button type="button" class="chip" data-chip="Food" aria-pressed="false">Food</button>
+        <button type="button" class="chip" data-chip="Clothing" aria-pressed="false">Clothing</button>
+      </div>
       <div class="field"><label for="q">Keywords</label><input id="q" placeholder="e.g. eng, lab, chair"></div>
       <div class="field"><label for="category">Category</label><input id="category" list="categories" placeholder="Any category"></div>
       <datalist id="categories"><option>Books</option><option>Engineering</option><option>Equipment</option><option>Furniture</option><option>Food</option><option>Clothing</option><option>Electronics</option><option>Essentials</option></datalist>
@@ -204,7 +217,8 @@
     const list = state.items.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
     const box = $("results");
     if (!list.length) {
-      box.innerHTML = `<li class="empty">No available resources match these needs yet. Try fewer keywords, or a broader area.</li>`;
+      const asked = [$("q").value.trim(), $("category").value.trim()].filter(Boolean).map(v => "“" + esc(v) + "”").join(" in ");
+      box.innerHTML = `<li class="empty">${asked ? "Nothing available for " + asked + "." : "No resources are available right now."} Try a shorter word, a category chip, or clear the filters.</li>`;
       return;
     }
     box.innerHTML = list.map((item, index) => {
@@ -317,6 +331,16 @@
   });
 
   $("needs").addEventListener("submit", e => { e.preventDefault(); search(); });
+
+  // Example chips: one tap fills the category and searches (tap the active chip again to clear it).
+  $("chips").addEventListener("click", e => {
+    const chip = e.target.closest("[data-chip]"); if (!chip) return;
+    const wasOn = chip.getAttribute("aria-pressed") === "true";
+    document.querySelectorAll("[data-chip]").forEach(c => c.setAttribute("aria-pressed", "false"));
+    $("category").value = wasOn ? "" : chip.dataset.chip;
+    if (!wasOn) chip.setAttribute("aria-pressed", "true");
+    search();
+  });
 
   /* ---------- start: show the last results instantly, then refresh ---------- */
   renderWeights();
