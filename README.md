@@ -203,10 +203,12 @@ POST   /api/auth/register
 POST   /api/auth/login
 GET    /api/auth/me
 GET    /api/profile
+PUT    /api/profile
 PUT    /api/profile/location-privacy
 
 GET    /api/resources
 GET    /api/resources/:id
+GET    /api/resources/:id/history        (owner/admin: "resource passport")
 POST   /api/resources
 PUT    /api/resources/:id
 DELETE /api/resources/:id
@@ -219,11 +221,22 @@ PUT    /api/requests/:id/approve
 PUT    /api/requests/:id/decline
 PUT    /api/requests/:id/handover
 PUT    /api/requests/:id/complete
+GET    /api/requests/:id/messages        (donor, recipient; admin read-only)
+POST   /api/requests/:id/messages
+
+GET    /api/notifications                (?unread=true&limit=20)
+PUT    /api/notifications/read-all
+PUT    /api/notifications/:id/read
+
+GET    /api/impact                       (completed transfers and units redistributed)
 
 GET    /api/admin/users
 GET    /api/admin/stats
+PUT    /api/admin/users/:id/verification (verify or revoke an organisation)
 DELETE /api/admin/users/:id
 ```
+
+Exchange endpoints are listed under *Resource Exchange API* below.
 
 Protected endpoints require:
 
@@ -246,22 +259,30 @@ Never commit `.env` files or production credentials.
 
 ## Testing & Validation
 
-The project has been tested across the main backend and frontend flows, including:
+### Automated tests
 
-- Authentication and JWT sessions
-- Role-based authorization
-- Resource creation and validation
-- Request creation and validation
-- Explainable smart matching
-- Duplicate active-request protection
-- Resource ownership boundaries
-- Request approval and decline
-- Handover and receipt completion
-- Invalid IDs and malformed input handling
-- Render and Neon connectivity
-- JavaScript syntax validation
-- Workspace diagnostics
-- Git diff validation
+`backend/test/api.test.js` contains 21 integration tests that run the real Express app against a real
+PostgreSQL database (Node's built-in test runner; no extra dependencies). Test names carry the checklist
+IDs (T01-T17) used in [`docs/FINAL_REVIEW.md`](docs/FINAL_REVIEW.md). Use a throwaway database, never production:
+
+```bash
+cd backend
+DATABASE_URL=postgresql://user:pass@localhost:5432/resourcex_test \
+JWT_SECRET=test ADMIN_REGISTRATION_CODE=admin-code npm test
+```
+
+They cover registration and login, role permissions, resource ownership, explainable matching scores,
+the full donation lifecycle, contact and location privacy, simultaneous requests for one resource,
+messaging, notifications, resource history, the complete exchange workflow (propose, counteroffer,
+accept, two-sided handover and receipt, partial quantities), organisation verification, and the admin
+statistics. The same suite passes on a fresh `schema.sql` database and on databases upgraded with
+`phase5_enhancements.sql` from the old 3-table schema and from the old exchange schema.
+GitHub Actions (`.github/workflows/ci.yml`) runs it on every push and pull request.
+
+### Manual checks (not covered by automated tests)
+
+Opening the deployed frontend, browser-console errors, mobile layout, and the visual flow of every page
+must be checked by hand. See the demo checklist in `docs/FINAL_REVIEW.md`.
 
 ## Current Project Status
 
@@ -419,7 +440,7 @@ All exchange endpoints require a valid Bearer token.
 - `PUT /api/exchanges/:id/complete` — confirm receipt; completion occurs only after both participants confirm.
 - `GET /api/exchanges/:id/messages` and `POST /api/exchanges/:id/messages` — read or send participant-only messages.
 
-Resource rows are locked in ID order during exchange mutations. Acceptance rechecks availability and quantity and reserves both resources. Pickup location is hidden from public resource listings. For accepted transactions, an exact pickup location is shared only when the resource owner's privacy setting is `exact`; users can change that setting from the exchange page. Approximate/none settings keep the saved pickup location hidden. The exchange API has not yet been verified end-to-end against a live PostgreSQL instance; apply migrations on a backup/staging database and finish the test checklist before production use.
+Resource rows are locked in ID order during exchange mutations. Acceptance rechecks availability and quantity and reserves both resources. Pickup location is hidden from public resource listings. For accepted transactions, an exact pickup location is shared only when the resource owner's privacy setting is `exact`; users can change that setting from the exchange page. Approximate/none settings keep the saved pickup location hidden. The exchange workflow is covered by the automated integration tests (see *Testing & Validation*). Even so, back up the database and apply migrations to a staging copy before touching production.
 
 ## Project Positioning
 
@@ -448,3 +469,7 @@ Completion
 ```
 
 The remaining work is primarily focused on **trust, safety, communication, privacy, operational reliability, and a stronger real-world fulfillment experience** rather than replacing the core architecture.
+
+## Production configuration
+
+See `backend/.env.example` for every setting. Production startup is refused when `JWT_SECRET` is shorter than 32 characters or `CORS_ORIGIN` is missing. The frontend API address is set in `frontend/config.js`. Full checklist and known gaps: `docs/FINAL_REVIEW.md`, section 10.

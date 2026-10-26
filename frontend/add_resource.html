@@ -265,6 +265,20 @@
                 </div>
 
 
+                <!-- MAP LOCATION (optional) -->
+
+                <div class="form-group">
+                    <label for="resourceLatitude">Map location (optional)</label>
+                    <p class="field-hint">Helps recipients find you on the map. Only a rounded position (about 1 km) is shown to other users.</p>
+                    <div class="coord-row">
+                        <input type="number" step="any" id="resourceLatitude" placeholder="Latitude, e.g. 12.9165" aria-label="Latitude">
+                        <input type="number" step="any" id="resourceLongitude" placeholder="Longitude, e.g. 79.1325" aria-label="Longitude">
+                    </div>
+                    <button type="button" class="secondary-btn" data-use-location="resourceLatitude,resourceLongitude,resourceLocationStatus">📍 Use my current location</button>
+                    <span id="resourceLocationStatus" class="field-hint" role="status"></span>
+                </div>
+
+
                 <!-- DESCRIPTION -->
 
                 <div class="form-group">
@@ -325,8 +339,11 @@
 </div>
 
 
-<script src="script.js?v=20260912c"></script>
+<script src="config.js?v=20261026"></script>
+    <script src="script.js?v=20261025"></script>
 
+    <script src="notifications.js?v=20261025"></script>
+    <script src="map.js?v=20261025b"></script>
 </body>
 
 </html>

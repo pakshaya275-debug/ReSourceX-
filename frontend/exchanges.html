@@ -58,9 +58,10 @@
     <div id="exchangeList" class="exchange-list"><div class="empty-state">Loading your exchanges…</div></div>
   </section>
 </main>
-<script>
+<script src="config.js?v=20261026"></script>
+    <script>
 (() => {
-  const API = window.RESOURCEX_API_URL || "https://resourcex-hjz9.onrender.com/api";
+  const API = window.RESOURCEX_API_URL;
   const tokenKey = "resourceXAuthToken", userKey = "resourceXCurrentUser";
   const token = localStorage.getItem(tokenKey);
   let user = null, allResources = [], counterForId = null;
@@ -229,5 +230,6 @@
   init();
 })();
 </script>
+    <script src="notifications.js?v=20261025"></script>
 </body>
 </html>

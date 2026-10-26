@@ -11,6 +11,12 @@ function initExchangesRouter({ pool, requireAuth, requireRole }) {
     try { await pool.query("INSERT INTO notifications (user_id,type,message,related_type,related_id) VALUES ($1,$2,$3,'exchange',$4)",[userId,type,message,exchangeId]); }
     catch(e) { console.error("ReSourceX notification failed:",e.message); }
   }
+  async function history(resourceIds,action,userId,exchangeId) {
+    for(const resourceId of resourceIds){
+      try { await pool.query("INSERT INTO resource_history (resource_id,action,performed_by,details) VALUES ($1,$2,$3,$4)",[resourceId,action,userId,JSON.stringify({exchangeId})]); }
+      catch(e) { console.error("ReSourceX history failed:",e.message); }
+    }
+  }
   async function participant(req,res,next) {
     const id=idOf(req.params.id);
     if(!id) return res.status(400).json({error:"Invalid exchange id"});
@@ -106,6 +112,7 @@ function initExchangesRouter({ pool, requireAuth, requireRole }) {
         notice={userId:other,type:"exchange_accepted",message:"Your exchange proposal was accepted."};
       }
       await c.query("COMMIT");done=true;if(notice)await notify(notice.userId,notice.type,notice.message,req.exchangeId);
+      if(action==="accept")await history(oldIds,"exchange_accepted",req.user.id,req.exchangeId);
       return res.json({exchange:await exchangeView(req.exchangeId)});
     }catch(e){if(!done)await c.query("ROLLBACK");throw e;}finally{c.release();}
   }));
@@ -142,7 +149,7 @@ function initExchangesRouter({ pool, requireAuth, requireRole }) {
     }catch(e){if(!done)await c.query("ROLLBACK");throw e;}finally{c.release();}
   }));
   router.put("/:id/complete",requireAuth,requireRole("DONOR","RECIPIENT","ADMIN"),participant,asyncRoute(async(req,res)=>{
-    const c=await pool.connect();let done=false;
+    const c=await pool.connect();let done=false,completedIds=null;
     try{
       await c.query("BEGIN");const q=await c.query("SELECT * FROM exchanges WHERE id=$1 FOR UPDATE",[req.exchangeId]),e=q.rows[0];
       if(!e){await c.query("ROLLBACK");done=true;return res.status(404).json({error:"Exchange not found"});}
@@ -164,9 +171,11 @@ function initExchangesRouter({ pool, requireAuth, requireRole }) {
         }
         await c.query("UPDATE exchange_resources SET quantity_fulfilled=quantity WHERE exchange_id=$1",[req.exchangeId]);
         await c.query("UPDATE exchanges SET status='COMPLETED',completed_at=NOW() WHERE id=$1",[req.exchangeId]);
+        completedIds=items.rows.map(i=>i.resource_id);
       }
       await c.query("COMMIT");done=true;const other=String(e.initiator_id)===String(req.user.id)?e.recipient_id:e.initiator_id;
       await notify(other,"exchange_receipt_confirmation","A participant confirmed receipt of their exchange resources.",req.exchangeId);
+      if(completedIds)await history(completedIds,"exchange_completed",req.user.id,req.exchangeId);
       return res.json({exchange:await exchangeView(req.exchangeId)});
     }catch(e){if(!done)await c.query("ROLLBACK");throw e;}finally{c.release();}
   }));

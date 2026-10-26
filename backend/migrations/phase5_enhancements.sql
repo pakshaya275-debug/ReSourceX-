@@ -123,6 +123,8 @@ UPDATE exchanges SET current_proposer_id=initiator_id WHERE current_proposer_id 
 ALTER TABLE exchanges ALTER COLUMN current_proposer_id SET NOT NULL;
 ALTER TABLE exchanges ALTER COLUMN proposed_at SET DEFAULT NOW();
 ALTER TABLE exchanges ALTER COLUMN proposed_at SET NOT NULL;
+-- Legacy tables defaulted to 'OFFERED', which the new status constraint rejects.
+ALTER TABLE exchanges ALTER COLUMN status SET DEFAULT 'PROPOSED';
 ALTER TABLE exchanges DROP CONSTRAINT IF EXISTS exchanges_status_v2_check;
 ALTER TABLE exchanges DROP CONSTRAINT IF EXISTS exchanges_initiator_recipient_check_v2;
 ALTER TABLE exchanges ADD CONSTRAINT exchanges_status_v2_check CHECK (status IN ('PROPOSED','COUNTERED','ACCEPTED','IN_PROGRESS','COMPLETED','DECLINED','CANCELLED'));
