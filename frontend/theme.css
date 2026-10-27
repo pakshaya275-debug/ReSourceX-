@@ -134,3 +134,76 @@ button:active,.primary-btn:active,.secondary-btn:active,.auth-button:active{filt
  .profile-form .form-row{grid-template-columns:minmax(0,1fr)}
  .coord-row{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Mobile-first layout hardening (final review pass) */
+* { min-width: 0; }
+img,svg,video,canvas { max-width: 100%; }
+.dashboard { width: 100%; min-width: 0; align-items: stretch; }
+.dashboard > .sidebar { flex: 0 0 250px; width: 250px; min-width: 0; }
+.dashboard > .main-content { flex: 1 1 0; width: auto; min-width: 0; }
+.main-content > *, .main-content section, .main-content header { min-width: 0; max-width: 100%; }
+.main-content .form-card, .main-content .resource-form, .main-content .profile-form,
+.main-content .profile-form fieldset, .main-content .form-row, .main-content .coord-row { min-width: 0; }
+.main-content .form-row > *, .main-content .coord-row > *, .main-content .form-group { min-width: 0; }
+.main-content input, .main-content select, .main-content textarea { width: 100%; max-width: 100%; }
+.main-content .resource-grid, .main-content .stats-grid { min-width: 0; }
+.main-content .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.resource-table-container { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.resource-table { min-width: 620px; }
+.notification-btn { flex: 0 0 42px; display: inline-flex; align-items: center; justify-content: center; }
+.notification-btn svg { width: 20px; height: 20px; display: block; }
+.rx-bell { display: inline-flex; align-items: center; justify-content: center; }
+.rx-bell svg { width: 22px; height: 22px; display: block; }
+.rx-panel { max-height: min(70dvh, 520px); }
+@media (max-width: 900px) {
+  .dashboard { display: flex; flex-direction: column; }
+  .dashboard > .sidebar {
+    position: relative; inset: auto; width: 100%; min-width: 0; min-height: 0;
+    flex: 0 0 auto; padding: 10px 12px; border-right: 0 !important;
+    border-bottom: 2px solid var(--ink) !important;
+  }
+  .sidebar-logo { padding: 4px 8px 12px; font-size: 21px; }
+  .sidebar-nav, .sidebar-bottom {
+    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 8px;
+    overflow-x: auto; max-width: 100%; padding: 3px 2px 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sidebar-bottom { margin-top: 0; }
+  .nav-item {
+    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px; white-space: nowrap; padding: 10px 12px; min-height: 42px;
+  }
+  .main-content { margin-left: 0 !important; width: 100% !important; padding: 20px 16px !important; }
+  .dashboard-header { gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .header-actions { flex-wrap: wrap; gap: 10px; }
+  .welcome-section { gap: 16px; flex-wrap: wrap; }
+  .welcome-section .primary-btn { flex: 0 0 auto; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .section-header { gap: 12px; flex-wrap: wrap; padding: 18px; }
+  .profile-form { max-width: 100% !important; }
+}
+@media (max-width: 600px) {
+  .main-content { padding: 16px 12px !important; }
+  .dashboard-header { margin-bottom: 20px; }
+  .dashboard-header h1, .page-header h1 { font-size: clamp(25px, 7vw, 34px); }
+  .header-actions { width: 100%; justify-content: space-between; }
+  .profile-info span { font-size: 11px; }
+  .welcome-section { padding: 18px; align-items: flex-start; }
+  .welcome-section .primary-btn { width: 100%; justify-content: center; }
+  .stats-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 12px; }
+  .stat-card { padding: 15px; }
+  .form-row, .profile-form .form-row, .coord-row { grid-template-columns: minmax(0, 1fr) !important; gap: 0; }
+  .auth-page { min-height: 100dvh; }
+  .brand-panel { padding: 26px 18px !important; }
+  .brand-panel .logo { margin-bottom: 26px; }
+  .brand-panel .brand-content h1 { font-size: clamp(34px, 9vw, 46px); letter-spacing: -1.2px; }
+  .brand-panel .feature { align-items: flex-start; }
+  .auth-panel { padding: 18px 12px 30px !important; }
+  .auth-card { padding: 20px 16px !important; }
+  .auth-tabs { margin-bottom: 24px; }
+  .auth-card .auth-tab { overflow-wrap: normal; }
+  .rx-bell { right: 12px !important; bottom: 12px !important; width: 48px !important; height: 48px !important; }
+  .rx-panel { right: 12px !important; bottom: 70px !important; width: calc(100vw - 24px) !important; }
+  .rx-head { gap: 10px; flex-wrap: wrap; }
+}
