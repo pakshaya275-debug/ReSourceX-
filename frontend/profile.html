@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile | ReSourceX</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="theme.css?v=20261027">
+    <link rel="stylesheet" href="theme.css?v=20261026">
 </head>
 <body>
 <div class="dashboard">
     <aside class="sidebar">
-        <div class="sidebar-logo"><span>↻</span> ReSource<span>X</span></div>
+        <div class="sidebar-logo"><span><span class="ico-slot" data-icon="refresh"></span></span> <span class="brand-name">ReSource<span>X</span></span></div>
         <nav class="sidebar-nav">
-            <a href="recipient_dashboard.html" class="nav-item">⌕<span>Find Resources</span></a>
-            <a href="add_resource.html" class="nav-item">+<span>Add Resource</span></a>
-            <a href="exchanges.html" class="nav-item">↻<span>Resource Exchange</span></a>
-            <a href="profile.html" class="nav-item active">○<span>My Profile</span></a>
+            <a href="recipient_dashboard.html" class="nav-item"><span class="ico-slot" data-icon="search"></span><span>Find Resources</span></a>
+            <a href="add_resource.html" class="nav-item"><span class="ico-slot" data-icon="plus"></span><span>Add Resource</span></a>
+            <a href="exchanges.html" class="nav-item"><span class="ico-slot" data-icon="exchange"></span><span>Resource Exchange</span></a>
+            <a href="profile.html" class="nav-item active"><span class="ico-slot" data-icon="user"></span><span>My Profile</span></a>
             <a href="index.html" class="nav-item logout"
-               onclick="localStorage.removeItem('resourceXAuthToken');localStorage.removeItem('resourceXCurrentUser');">↪<span>Logout</span></a>
+               onclick="localStorage.removeItem('resourceXAuthToken');localStorage.removeItem('resourceXCurrentUser');"><span class="ico-slot" data-icon="logout"></span><span>Logout</span></a>
         </nav>
     </aside>
 
@@ -80,7 +80,7 @@
                     <input type="number" step="any" id="latitude" placeholder="Latitude" aria-label="Latitude">
                     <input type="number" step="any" id="longitude" placeholder="Longitude" aria-label="Longitude">
                 </div>
-                <button type="button" class="secondary-btn" data-use-location="latitude,longitude,locationStatus">⌖ Use my current location</button>
+                <button type="button" class="secondary-btn" data-use-location="latitude,longitude,locationStatus"><span class="ico-slot" data-icon="pin"></span> Use my current location</button>
                 <span id="locationStatus" class="field-hint" role="status"></span>
             </fieldset>
 
@@ -90,6 +90,7 @@
 </div>
 
 <script src="config.js?v=20261026"></script>
+    <script src="icons.js?v=20261026"></script>
     <script>
 (() => {
     const API = window.RESOURCEX_API_URL;
@@ -119,7 +120,7 @@
         text("country", p.country); text("postalCode", p.postalCode);
         text("latitude", p.latitude); text("longitude", p.longitude);
         $("verificationStatus").textContent = p.organisationName
-            ? (p.organisationVerified ? " Verified by a ReSourceX administrator." : "Not verified yet. An administrator must verify this organisation.")
+            ? (p.organisationVerified ? "Verified by a ReSourceX administrator." : "Not verified yet. An administrator must verify this organisation.")
             : "";
     }
 
@@ -156,6 +157,6 @@
 })();
 </script>
 <script src="map.js?v=20261025b"></script>
-<script src="notifications.js?v=20261027"></script>
+<script src="notifications.js?v=20261025"></script>
 </body>
 </html>

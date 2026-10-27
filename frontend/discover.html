@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Match | ReSourceX</title>
+<link rel="stylesheet" href="theme.css?v=20261026">
 <style>
   :root{
     --paper:#fffdf6; --card:#ffffff; --ink:#141b2d; --muted:#5b6275; --line:#141b2d;
     --accent:#ff4d5e; --accent-ink:#141b2d; --ok:#2e5e4e;
     --f-category:#ff4d5e; --f-location:#5fe3a6; --f-quantity:#ffbf72; --f-urgency:#9b7bd8; --f-availability:#5b8def;
-    --serif:Georgia,"Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --serif:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
   *{box-sizing:border-box} html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
   a{color:inherit} button,input,select{font:inherit;color:inherit}
@@ -27,6 +28,8 @@
   .lede{color:var(--muted);margin:0 0 22px;max-width:60ch}
   aside.needs{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:20px;align-self:start;position:sticky;top:90px;box-shadow:6px 6px 0 var(--ink)}
   #q{font-size:18px;padding:14px 16px}
+  .chip-row{margin-bottom:14px}
+  #needs .field:first-of-type{margin-top:6px}
   .btn{border:2px solid var(--ink)!important;box-shadow:3px 3px 0 var(--ink);border-radius:12px!important;font-weight:700}
   .btn.primary{background:var(--orange)!important;color:var(--ink)!important}
   .needs h2{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 12px}
@@ -76,46 +79,6 @@
   @keyframes shimmer{to{background-position:-200% 0}}
   @media (max-width:640px){.item{grid-template-columns:40px 1fr}.score{grid-column:2;text-align:left;min-width:0}.details{grid-column:1 / 3}.frow{grid-template-columns:90px 1fr 70px}}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-  /* Responsive refinements aligned with the approved ReSourceX screenshots. */
-  :root{--orange:#ffbf72}
-  .top{min-width:0;padding:14px clamp(12px,2.5vw,28px)}
-  .brand{white-space:nowrap;flex:0 0 auto}
-  .nav{min-width:0;max-width:100%;overflow-x:auto;white-space:nowrap;gap:clamp(10px,1.5vw,18px);scrollbar-width:thin}
-  .wrap{width:100%;min-width:0;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:clamp(16px,2vw,28px);padding:clamp(14px,2.5vw,28px)}
-  .wrap>section{min-width:0}
-  .needs{min-width:0}
-  .item{min-width:0;grid-template-columns:42px minmax(0,1fr) minmax(100px,auto)}
-  .item>div:nth-child(2){min-width:0}
-  .name,.meta,.note{overflow-wrap:anywhere}
-  .score{min-width:0}
-  .bar{width:100%;max-width:460px}
-  .btn{max-width:100%;white-space:normal}
-  @media(max-width:880px){
-    .top{align-items:flex-start;flex-wrap:wrap;gap:8px}
-    .nav{width:100%;padding-bottom:4px}
-    .wrap{grid-template-columns:minmax(0,1fr);padding:16px}
-    aside.needs{position:static;top:auto;box-shadow:4px 4px 0 var(--ink)}
-    .needs .weights{margin-top:14px}
-  }
-  @media(max-width:560px){
-    .wrap{padding:12px;gap:18px}
-    h1{font-size:30px}
-    .lede{margin-bottom:14px}
-    .row2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-    .weight{grid-template-columns:94px minmax(0,1fr) 28px;gap:7px}
-    .item{grid-template-columns:28px minmax(0,1fr);gap:10px;padding:13px}
-    .rank{font-size:22px}
-    .name{font-size:18px}
-    .score{grid-column:2;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px;text-align:left}
-    .pct{font-size:30px}
-    .score .basis{margin:0}
-    .actions{grid-column:1/-1;justify-content:flex-start!important;margin-top:6px}
-    .details{grid-column:1/-1}
-    .frow{grid-template-columns:82px minmax(0,1fr) 54px;gap:7px;font-size:12px}
-    .legend{gap:5px 10px}
-    .modebar{align-items:flex-start}
-    .seg button{padding:7px 10px;font-size:13px}
-  }
   .note{font-size:13px;color:var(--muted);margin-top:14px;max-width:70ch}
 </style>
 </head>
@@ -124,7 +87,7 @@
   <a class="brand" href="discover.html">Re<span>Source</span>X</a>
   <nav class="nav" aria-label="Main">
     <a href="discover.html" aria-current="page">Smart Match</a>
-    <a href="recipient_dashboard.html">Dashboard</a>
+    <a href="recipient_dashboard.html#myRequestsSection">My Requests</a>
     <a href="exchanges.html">Exchange</a>
     <a href="profile.html">Profile</a>
     <a href="index.html" id="signOut">Sign out</a>
@@ -186,7 +149,8 @@
 </main>
 
 <script src="config.js?v=20261026"></script>
-<script src="notifications.js?v=20261027"></script>
+<script src="icons.js?v=20261026"></script>
+    <script src="notifications.js?v=20261025"></script>
 <script>
 (() => {
   "use strict";
@@ -250,15 +214,7 @@
     }, 0);
     return (share / totalWeight) * 100;
   }
-  function officialScore(item) {
-    // Derive the displayed official score from the same breakdown shown below it.
-    // This avoids stale/missing aggregate values producing a misleading 0% label.
-    if (Array.isArray(item.breakdown) && item.breakdown.length) {
-      return item.breakdown.reduce((sum, part) => sum + (Number(part.points) || 0), 0);
-    }
-    return Number(item.matchScore) || 0;
-  }
-  function scoreOf(item) { return state.view === "custom" ? customScore(item) : officialScore(item); }
+  function scoreOf(item) { return state.view === "custom" ? customScore(item) : item.matchScore; }
 
   /* ---------- rendering ---------- */
   function render() {
@@ -326,7 +282,7 @@
     const index = ordered.indexOf(item) + 1;
     fetch(API + "/matching/events", { method: "POST", keepalive: true,
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ resourceId: item.id, action: "request", rank: index, score: Math.round(scoreOf(item)) }) }).catch(() => {});
+      body: JSON.stringify({ resourceId: item.id, action: "request", rank: index, score: item.matchScore }) }).catch(() => {});
     window.location.href = "request_confirmation.html";
   }
 

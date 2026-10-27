@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Resource Exchanges | ReSourceX</title>
 <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="theme.css?v=20261027">
+    <link rel="stylesheet" href="theme.css?v=20261026">
 <style>
 .exchange-wrap{max-width:1120px;margin:0 auto;padding:28px 22px 60px}
 .exchange-hero{background:linear-gradient(135deg,#087f5b,#0f9d82);color:#fff;border-radius:18px;padding:28px;margin-bottom:22px}
@@ -26,7 +26,7 @@
 </head>
 <body>
 <main class="exchange-wrap">
-  <div class="top-links"><a id="dashboardLink" href="recipient_dashboard.html">← Back to dashboard</a><a href="add_resource.html">＋ List a resource</a></div>
+  <div class="top-links"><a id="dashboardLink" href="recipient_dashboard.html"><span class="ico-slot" data-icon="arrowLeft"></span> Back to dashboard</a><a href="add_resource.html">＋ List a resource</a></div>
   <header class="exchange-hero">
     <h1>Resource Exchange</h1>
     <p>Offer a resource you own in return for another resource. Both participants must confirm the handover and receipt before an exchange is marked complete. Your pickup location stays hidden until the offer is accepted.</p>
@@ -60,6 +60,7 @@
   </section>
 </main>
 <script src="config.js?v=20261026"></script>
+    <script src="icons.js?v=20261026"></script>
     <script>
 (() => {
   const API = window.RESOURCEX_API_URL;
@@ -231,6 +232,6 @@
   init();
 })();
 </script>
-    <script src="notifications.js?v=20261027"></script>
+    <script src="notifications.js?v=20261025"></script>
 </body>
 </html>
