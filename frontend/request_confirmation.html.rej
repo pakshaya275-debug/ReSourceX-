@@ -1,0 +1,33 @@
+diff a/frontend/request_confirmation.html b/frontend/request_confirmation.html	(rejected hunks)
+@@ -8,7 +8,7 @@
+     <title>ReSourceX | Request Status</title>
+ 
+     <link rel="stylesheet" href="style.css">
+-    <link rel="stylesheet" href="theme.css?v=20261027">
++    <link rel="stylesheet" href="theme.css?v=20261026">
+ </head>
+ 
+ <body>
+@@ -38,7 +38,7 @@
+         <div class="confirmation-card">
+ 
+             <div class="confirmation-icon">
+-                ▣
++                <span class="ico-slot" data-icon="package"></span>
+             </div>
+ 
+             <h1>Request Resource</h1>
+@@ -117,9 +117,10 @@
+ 
+ 
+     <script src="config.js?v=20261026"></script>
+-    <script src="script.js?v=20261027"></script>
++    <script src="icons.js?v=20261026"></script>
++    <script src="script.js?v=20261025"></script>
+ 
+-    <script src="notifications.js?v=20261027"></script>
++    <script src="notifications.js?v=20261025"></script>
+ </body>
+ 
+ </html>
+\ No newline at end of file

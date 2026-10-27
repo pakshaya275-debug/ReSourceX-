@@ -1,0 +1,20 @@
+diff a/frontend/style.css b/frontend/style.css	(rejected hunks)
+@@ -1851,7 +1851,7 @@ button:disabled {
+ }
+ 
+ .match-reasons li::before {
+-    content: "";
++    content: "✓";
+     margin-right: 7px;
+     color: #168357;
+     font-weight: 700;
+@@ -2448,9 +2448,3 @@ button:disabled {
+ .matching-status.success { color: #087f5b; }
+ .matching-status.error { color: #c92a2a; }
+ @media (max-width: 640px) { .coord-row, .profile-form .form-row { grid-template-columns: 1fr; } .mode-strip a { margin-left: 0; } }
+-
+-
+-/* Guard against oversized controls and narrow viewport overflow. */
+-.main-content,.dashboard-main,.page-content{min-width:0;max-width:100%}
+-.form-card,.resource-form-card,.profile-form,.profile-form fieldset{min-width:0;max-width:100%}
+-input,select,textarea{max-width:100%}

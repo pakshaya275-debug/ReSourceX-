@@ -1,0 +1,33 @@
+diff a/frontend/resource_details.html b/frontend/resource_details.html	(rejected hunks)
+@@ -8,7 +8,7 @@
+     <title>ReSourceX | Resource Details</title>
+ 
+     <link rel="stylesheet" href="style.css">
+-    <link rel="stylesheet" href="theme.css?v=20261027">
++    <link rel="stylesheet" href="theme.css?v=20261026">
+ </head>
+ 
+ <body>
+@@ -37,7 +37,7 @@
+             <div class="details-header">
+ 
+                 <div class="details-icon">
+-                    ▣
++                    <span class="ico-slot" data-icon="package"></span>
+                 </div>
+ 
+                 <div>
+@@ -120,9 +120,10 @@
+ 
+ 
+     <script src="config.js?v=20261026"></script>
+-    <script src="script.js?v=20261027"></script>
++    <script src="icons.js?v=20261026"></script>
++    <script src="script.js?v=20261025"></script>
+ 
+-    <script src="notifications.js?v=20261027"></script>
++    <script src="notifications.js?v=20261025"></script>
+ </body>
+ 
+ </html>
+\ No newline at end of file

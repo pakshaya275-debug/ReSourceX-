@@ -1,0 +1,157 @@
+diff a/frontend/recipient_dashboard.html b/frontend/recipient_dashboard.html	(rejected hunks)
+@@ -8,7 +8,7 @@
+     <title>Recipient Dashboard | ReSourceX</title>
+ 
+     <link rel="stylesheet" href="style.css">
+-    <link rel="stylesheet" href="theme.css?v=20261027">
++    <link rel="stylesheet" href="theme.css?v=20261026">
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+ </head>
+ 
+@@ -20,29 +20,29 @@
+         <aside class="sidebar">
+ 
+             <div class="sidebar-logo">
+-                <span>↻</span>
+-                ReSource<span>X</span>
++                <span><span class="ico-slot" data-icon="refresh"></span></span>
++                <span class="brand-name">ReSource<span>X</span></span>
+             </div>
+ 
+             <nav class="sidebar-nav">
+ 
+                 <a href="discover.html" class="nav-item active" id="recipientNavFind">
+-                    ⌕
++                    <span class="ico-slot" data-icon="search"></span>
+                     <span>Find Resources</span>
+                 </a>
+ 
+                 <a href="#myRequestsSection" class="nav-item" id="recipientNavRequests">
+-                    ▤
++                    <span class="ico-slot" data-icon="clipboard"></span>
+                     <span>My Requests</span>
+                 </a>
+ 
+                 <a href="add_resource.html" class="nav-item">
+-                    +
++                    <span class="ico-slot" data-icon="plus"></span>
+                     <span>List a Resource</span>
+                 </a>
+ 
+                 <a href="exchanges.html" class="nav-item">
+-                    ↻
++                    <span class="ico-slot" data-icon="exchange"></span>
+                     <span>Resource Exchange</span>
+                 </a>
+ 
+@@ -51,22 +51,17 @@
+             <div class="sidebar-bottom">
+ 
+                 <a href="#" class="nav-item">
+-                    
++                    <span class="ico-slot" data-icon="settings"></span>
+                     <span>Settings</span>
+                 </a>
+ 
+-                <a href="discover.html" class="nav-item">
+-                    ≡
+-                    <span>Smart Match</span>
+-                </a>
+-
+                 <a href="profile.html" class="nav-item">
+-                    ○
++                    <span class="ico-slot" data-icon="user"></span>
+                     <span>My Profile</span>
+                 </a>
+ 
+                 <a href="index.html" class="nav-item logout">
+-                    ↪
++                    <span class="ico-slot" data-icon="logout"></span>
+                     <span>Logout</span>
+                 </a>
+ 
+@@ -80,10 +75,10 @@
+ 
+             <div class="mode-strip" role="note">
+                 <strong>Three ways to share:</strong>
+-                <span> Donate for free</span>
+-                <span>↻ Exchange one resource for another</span>
+-                <span>+ Request what you need</span>
+-                <a href="exchanges.html">Open Resource Exchange →</a>
++                <span><span class="ico-slot" data-icon="gift"></span> Donate for free</span>
++                <span><span class="ico-slot" data-icon="exchange"></span> Exchange one resource for another</span>
++                <span><span class="ico-slot" data-icon="users"></span> Request what you need</span>
++                <a href="exchanges.html">Open Resource Exchange <span class="ico-slot" data-icon="arrowRight"></span></a>
+             </div>
+ 
+ 
+@@ -98,7 +93,7 @@
+                 <div class="header-actions">
+ 
+                     <button class="notification-btn" title="Notifications">
+-                        
++                        <span class="ico-slot" data-icon="bell"></span>
+                     </button>
+ 
+                     <div class="profile">
+@@ -182,7 +177,7 @@
+                 <div class="filter-box">
+                     <label for="recipientLocation">Pickup Location</label>
+                     <input type="text" id="recipientLocation" placeholder="e.g. Vellore">
+-                    <button type="button" class="secondary-btn" data-use-location="recipientLatitude,recipientLongitude,locationStatus">⌖ Use my location</button>
++                    <button type="button" class="secondary-btn" data-use-location="recipientLatitude,recipientLongitude,locationStatus"><span class="ico-slot" data-icon="pin"></span> Use my location</button>
+                     <span id="locationStatus" class="field-hint" role="status"></span>
+                     <input type="hidden" id="recipientLatitude">
+                     <input type="hidden" id="recipientLongitude">
+@@ -237,7 +232,7 @@
+                     class="empty-state">
+ 
+                     <div class="empty-icon">
+-                        ▣
++                        <span class="ico-slot" data-icon="package"></span>
+                     </div>
+ 
+                     <h3>No resources found</h3>
+@@ -257,7 +252,7 @@
+                 <div class="section-header">
+ 
+                     <div>
+-                        <h2>▤ My Submitted Requests</h2>
++                        <h2><span class="ico-slot" data-icon="clipboard"></span> My Submitted Requests</h2>
+                         <p>Track the approval and allocation status of resources you have requested.</p>
+                     </div>
+ 
+@@ -299,11 +294,31 @@
+     </div>
+ 
+ 
++    <script>
++/* Smart Match is the recipient's search page. This page keeps only the request list. */
++document.addEventListener("DOMContentLoaded", function () {
++    var mine = document.getElementById("myRequestsSection");
++    var main = document.querySelector(".main-content");
++    if (mine && main) {
++        var keep = mine;
++        while (keep.parentElement && keep.parentElement !== main) keep = keep.parentElement;
++        Array.prototype.forEach.call(main.children, function (child) {
++            if (child !== keep && !child.classList.contains("mode-strip")) child.style.display = "none";
++        });
++    }
++    var find = document.getElementById("recipientNavFind");
++    if (find) { var label = find.querySelector("span:not(.ico-slot)"); if (label) label.textContent = "Smart Match"; }
++    document.querySelectorAll(".nav-item").forEach(function (a) {
++        a.classList.toggle("active", a.getAttribute("href") === "recipient_dashboard.html#myRequestsSection" || a.getAttribute("href") === "#myRequestsSection");
++    });
++});
++</script>
+     <script src="config.js?v=20261026"></script>
+-    <script src="script.js?v=20261027b"></script>
++    <script src="icons.js?v=20261026"></script>
++    <script src="script.js?v=20261025b"></script>
+     <script src="map.js?v=20261025b"></script>
+ 
+-    <script src="notifications.js?v=20261027"></script>
++    <script src="notifications.js?v=20261025"></script>
+     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+ </body>
+ 
