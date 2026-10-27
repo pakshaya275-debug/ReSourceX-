@@ -3,7 +3,7 @@
 :root{
   --cream:#fffdf6; --panel:#fff3d6; --ink:#141b2d; --coral:#ff4d5e; --orange:#ffbf72; --orange-dark:#f5a54a;
   --mint:#5fe3a6; --field:#e6eeff; --tan:#f3dba9; --paper:#ffffff; --sub:#5b6275;
-  --primary:var(--orange); --primary-dark:var(--orange-dark); --secondary:var(--mint);
+  --primary:var(--ink); --primary-dark:#000; --secondary:var(--mint);
   --light-green:var(--panel); --mint:var(--cream); --dark:var(--ink); --text:#1f2535; --muted:var(--sub);
   --border:var(--ink); --white:#ffffff;
 }
@@ -32,7 +32,7 @@ input::placeholder,textarea::placeholder{color:#7b8296}
 label{color:var(--ink);font-weight:600}
 
 /* Cards and panels: outlined, with a hard shadow */
-.resource-card,.dashboard-section,.stat-card,.auth-card,.form-card,.card,.panel,.exchange-card,.modal-content,.feature,.summary-card,.request-card,.empty-state{
+.resource-card,.dashboard-section,.stat-card,.auth-card,.form-card,.card,.panel,.exchange-card,.modal-content,.summary-card,.request-card,.empty-state{
   background:#fff!important;border:2px solid var(--ink)!important;border-radius:16px!important;box-shadow:6px 6px 0 var(--ink);
 }
 .resource-card:hover{transform:translate(-1px,-1px)}
@@ -60,150 +60,43 @@ label{color:var(--ink);font-weight:600}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+/* Icons (see icons.js) */
+.ico{width:1.15em;height:1.15em;vertical-align:-.2em;flex-shrink:0;display:inline-block}
+.ico-slot{display:inline-flex;align-items:center;vertical-align:middle}
+.ico-slot .ico{width:1.1em;height:1.1em}
+.nav-item .ico,.sidebar-logo .ico,.logo-icon .ico{width:1.2em;height:1.2em}
 
-/* Final responsive fixes: preserve the original green branding and keep content readable. */
-.brand-panel{width:58%;flex:1 1 58%;min-width:0;color:#fff}
-.brand-panel .brand-content{width:100%;max-width:680px}
-.brand-panel h1,.brand-panel .logo,.brand-panel .feature strong{color:#fff}
-.brand-panel .brand-description,.brand-panel .feature p,.brand-panel .brand-footer{color:rgba(255,255,255,.86)}
-.brand-panel .brand-content h1 span{color:#a9efd6}
-.brand-panel .feature-list{gap:14px}
-.brand-panel .feature{
-  display:flex;align-items:center;gap:14px;padding:14px 16px;
-  min-height:76px;background:rgba(255,255,255,.09)!important;
-  color:#fff;border:1px solid rgba(255,255,255,.24)!important;
-  border-radius:14px!important;box-shadow:none!important;
-}
-.brand-panel .feature-icon{flex:0 0 42px;width:42px;height:42px;color:#fff;background:rgba(255,255,255,.13);border-radius:10px}
-.brand-panel .feature strong{font-size:15px;line-height:1.35}
-.brand-panel .feature p{margin-top:3px;font-size:13px;line-height:1.45}
-.auth-panel{width:42%;flex:0 1 42%;min-width:0;padding:clamp(18px,3vw,44px);overflow-x:hidden}
-.auth-card{width:100%;max-width:480px;min-width:0;padding:clamp(20px,3vw,42px);margin:0 auto;overflow-wrap:anywhere}
-.auth-card .auth-tabs{gap:8px}
-.auth-card .auth-tab{color:#4b5563;background:#f3f4f6;border:1px solid #cbd5e1!important;box-shadow:none!important}
-.auth-card .auth-tab.active{color:#17221e;background:#ffbf72;border-color:#17221e!important}
-.auth-card a,.auth-card #forgotPasswordLink{color:#075d43!important;text-decoration:underline;text-underline-offset:3px}
-.auth-card .demo-text{color:#5b6275}
-.auth-card input,.auth-card select{max-width:100%;min-width:0}
-.rx-bell{top:auto!important;right:18px!important;bottom:18px!important}
-.rx-panel{top:auto!important;bottom:72px!important;right:18px!important}
-@media(max-width:900px){
- .auth-page{flex-direction:column}
- .brand-panel,.auth-panel{width:100%;flex:1 1 auto;min-height:auto}
- .brand-panel{padding:34px 24px}
- .brand-panel .logo{margin-bottom:32px}
- .brand-panel .brand-content h1{font-size:clamp(36px,7vw,54px);margin-bottom:18px}
- .brand-panel .brand-description{margin-bottom:24px}
- .brand-panel .brand-footer{margin-top:28px}
- .auth-panel{padding:28px 18px 40px}
- .auth-card{max-width:560px}
-}
-@media(max-width:480px){
- .brand-panel{padding:26px 18px}
- .brand-panel .feature{padding:12px;min-height:68px}
- .auth-panel{padding:20px 12px 32px}
- .auth-card{padding:20px 16px}
- .auth-card .auth-tab{padding:10px 6px;font-size:14px}
-}
+/* Landing page: the brand panel is green, so its text must stay light */
+.brand-content h1,.brand-panel h1{color:#ffffff!important}
+.brand-content h1 span{color:#a7f3d0!important}
+.brand-panel p,.brand-panel .demo-text,.brand-panel .brand-description{color:rgba(255,255,255,.85)!important}
+.brand-panel .feature strong{color:#ffffff!important}
+.brand-panel .feature p{color:rgba(255,255,255,.8)!important}
+.brand-panel .feature-icon{background:rgba(255,255,255,.14)!important;border:none!important;box-shadow:none!important}
 
+/* Auth tabs and links: dark text, readable on white */
+.auth-tab.active,.auth-tab{color:var(--ink)!important}
+.auth-tab.active{border-bottom:3px solid var(--orange)}
+.form-options a,.forgot-link,.auth-card a{color:var(--ink)!important;text-decoration:underline;font-weight:600}
 
-/* Shared application layout corrections */
-html,body{max-width:100%;overflow-x:hidden}
-body{font-family:Inter,"Segoe UI",Arial,sans-serif}
-.main-content{min-width:0;width:auto;max-width:100%;flex:1 1 auto;overflow-x:hidden;padding:clamp(20px,3vw,40px)}
-.sidebar{flex:0 0 292px;width:292px;min-width:250px;position:relative}
-.main-content h1,.main-content h2,.main-content p{overflow-wrap:anywhere}
-.main-content form,.main-content fieldset,.main-content .form-card,.main-content .resource-form,.main-content .profile-form{min-width:0;max-width:100%}
-.main-content input,.main-content select,.main-content textarea,.main-content button{max-width:100%;min-width:0}
-.profile-form{width:100%;max-width:900px}
-.profile-form fieldset{width:100%;min-width:0}
-.profile-form input,.profile-form select{width:100%;min-width:0}
-.profile-form .form-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-.nav-item{min-width:0;overflow-wrap:anywhere}
-.nav-item:focus,.nav-item:active{background:#ffbf72!important;color:#17221e!important;outline-color:#17221e}
-.nav-item:hover{background:#ffe2ad;color:#17221e}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #0f9d82;outline-offset:2px}
-button:active,.primary-btn:active,.secondary-btn:active,.auth-button:active{filter:brightness(.97)}
-@media(max-width:900px){
- .sidebar{flex:0 0 230px;width:230px;min-width:210px}
- .main-content{padding:22px 18px}
-}
-@media(max-width:680px){
- .sidebar{width:100%;min-width:0;flex-basis:auto}
- .main-content{width:100%;padding:18px 14px}
- .profile-form .form-row{grid-template-columns:minmax(0,1fr)}
- .coord-row{grid-template-columns:minmax(0,1fr)}
-}
+/* Logo and sidebar: icon and name sit on one line; nav icons share one column */
+.sidebar-logo{display:flex;align-items:center;gap:8px}
+.sidebar-logo .ico-slot{width:1.5em;height:1.5em;border:2px solid var(--ink);border-radius:10px;background:#fff;justify-content:center;flex:0 0 auto}
+.sidebar-logo .ico{width:1.05em;height:1.05em;color:var(--ink)}
+.nav-item .ico-slot{width:22px;height:22px;justify-content:center;flex:0 0 22px}
+/* Header bell: same outline style as the other header controls */
+.notification-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;background:#fff!important}
+.sidebar-logo{flex-wrap:nowrap;white-space:nowrap}
 
+/* Exchange banner: cream panel with ink text, matching the rest of the site */
+.exchange-hero{background:var(--panel)!important;color:var(--ink)!important;border:2px solid var(--ink)!important;box-shadow:6px 6px 0 var(--ink)}
+.exchange-hero *{color:var(--ink)!important}
 
-/* Mobile-first layout hardening (final review pass) */
-* { min-width: 0; }
-img,svg,video,canvas { max-width: 100%; }
-.dashboard { width: 100%; min-width: 0; align-items: stretch; }
-.dashboard > .sidebar { flex: 0 0 250px; width: 250px; min-width: 0; }
-.dashboard > .main-content { flex: 1 1 0; width: auto; min-width: 0; }
-.main-content > *, .main-content section, .main-content header { min-width: 0; max-width: 100%; }
-.main-content .form-card, .main-content .resource-form, .main-content .profile-form,
-.main-content .profile-form fieldset, .main-content .form-row, .main-content .coord-row { min-width: 0; }
-.main-content .form-row > *, .main-content .coord-row > *, .main-content .form-group { min-width: 0; }
-.main-content input, .main-content select, .main-content textarea { width: 100%; max-width: 100%; }
-.main-content .resource-grid, .main-content .stats-grid { min-width: 0; }
-.main-content .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.resource-table-container { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.resource-table { min-width: 620px; }
-.notification-btn { flex: 0 0 42px; display: inline-flex; align-items: center; justify-content: center; }
-.notification-btn svg { width: 20px; height: 20px; display: block; }
-.rx-bell { display: inline-flex; align-items: center; justify-content: center; }
-.rx-bell svg { width: 22px; height: 22px; display: block; }
-.rx-panel { max-height: min(70dvh, 520px); }
-@media (max-width: 900px) {
-  .dashboard { display: flex; flex-direction: column; }
-  .dashboard > .sidebar {
-    position: relative; inset: auto; width: 100%; min-width: 0; min-height: 0;
-    flex: 0 0 auto; padding: 10px 12px; border-right: 0 !important;
-    border-bottom: 2px solid var(--ink) !important;
-  }
-  .sidebar-logo { padding: 4px 8px 12px; font-size: 21px; }
-  .sidebar-nav, .sidebar-bottom {
-    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 8px;
-    overflow-x: auto; max-width: 100%; padding: 3px 2px 8px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .sidebar-bottom { margin-top: 0; }
-  .nav-item {
-    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-    gap: 7px; white-space: nowrap; padding: 10px 12px; min-height: 42px;
-  }
-  .main-content { margin-left: 0 !important; width: 100% !important; padding: 20px 16px !important; }
-  .dashboard-header { gap: 14px; align-items: flex-start; flex-wrap: wrap; }
-  .header-actions { flex-wrap: wrap; gap: 10px; }
-  .welcome-section { gap: 16px; flex-wrap: wrap; }
-  .welcome-section .primary-btn { flex: 0 0 auto; }
-  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .section-header { gap: 12px; flex-wrap: wrap; padding: 18px; }
-  .profile-form { max-width: 100% !important; }
-}
-@media (max-width: 600px) {
-  .main-content { padding: 16px 12px !important; }
-  .dashboard-header { margin-bottom: 20px; }
-  .dashboard-header h1, .page-header h1 { font-size: clamp(25px, 7vw, 34px); }
-  .header-actions { width: 100%; justify-content: space-between; }
-  .profile-info span { font-size: 11px; }
-  .welcome-section { padding: 18px; align-items: flex-start; }
-  .welcome-section .primary-btn { width: 100%; justify-content: center; }
-  .stats-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 12px; }
-  .stat-card { padding: 15px; }
-  .form-row, .profile-form .form-row, .coord-row { grid-template-columns: minmax(0, 1fr) !important; gap: 0; }
-  .auth-page { min-height: 100dvh; }
-  .brand-panel { padding: 26px 18px !important; }
-  .brand-panel .logo { margin-bottom: 26px; }
-  .brand-panel .brand-content h1 { font-size: clamp(34px, 9vw, 46px); letter-spacing: -1.2px; }
-  .brand-panel .feature { align-items: flex-start; }
-  .auth-panel { padding: 18px 12px 30px !important; }
-  .auth-card { padding: 20px 16px !important; }
-  .auth-tabs { margin-bottom: 24px; }
-  .auth-card .auth-tab { overflow-wrap: normal; }
-  .rx-bell { right: 12px !important; bottom: 12px !important; width: 48px !important; height: 48px !important; }
-  .rx-panel { right: 12px !important; bottom: 70px !important; width: calc(100vw - 24px) !important; }
-  .rx-head { gap: 10px; flex-wrap: wrap; }
-}
+/* Sidebar brand: one word, icon on the left, admin tag on its own line beneath */
+.sidebar-logo{display:flex;flex-wrap:wrap;align-items:center;gap:0}
+.sidebar-logo > span:first-child{margin-right:8px}
+.sidebar-logo .brand-name{white-space:nowrap}
+.sidebar-logo .admin-badge{flex-basis:100%;width:max-content;margin-top:8px}
+/* Brand colours: name in ink, the X in green, as in the target screens */
+.sidebar-logo .brand-name{color:var(--ink)!important}
+.sidebar-logo .brand-name span{color:#6ccf5c!important}
