@@ -91,7 +91,7 @@
     function buildBell() {
         var style = document.createElement("style"); style.textContent = css; document.head.appendChild(style);
         bell = document.createElement("button");
-        bell.type = "button"; bell.className = "rx-bell"; bell.innerHTML = ""; bell.setAttribute("aria-haspopup", "true");
+        bell.type = "button"; bell.className = "rx-bell"; bell.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>'; bell.setAttribute("aria-haspopup", "true");
         badge = document.createElement("span"); badge.className = "rx-badge"; badge.style.display = "none"; bell.appendChild(badge);
         panel = document.createElement("div"); panel.className = "rx-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "Notifications");
         panel.innerHTML = '<div class="rx-head"><span>Notifications</span><button type="button" class="rx-link" data-act="all">Mark all as read</button></div><ul class="rx-list"></ul>';
