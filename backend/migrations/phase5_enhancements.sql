@@ -16,6 +16,11 @@ ALTER TABLE users
     CHECK (location_privacy IN ('exact', 'approximate', 'none')),
   ADD COLUMN IF NOT EXISTS organisation_verified BOOLEAN NOT NULL DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS profile_picture_url TEXT;
+  ,ADD COLUMN IF NOT EXISTS address_line VARCHAR(200)
+  ,ADD COLUMN IF NOT EXISTS city VARCHAR(100)
+  ,ADD COLUMN IF NOT EXISTS state VARCHAR(100)
+  ,ADD COLUMN IF NOT EXISTS country VARCHAR(100)
+  ,ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20);
 
 -- Backfill existing users with defaults
 UPDATE users SET location_privacy = LOWER(location_privacy) WHERE location_privacy IS NOT NULL;
