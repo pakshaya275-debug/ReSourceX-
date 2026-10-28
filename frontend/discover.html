@@ -88,7 +88,6 @@
   <nav class="nav" aria-label="Main">
     <a href="discover.html" aria-current="page">Smart Match</a>
     <a href="recipient_dashboard.html#myRequestsSection">My Requests</a>
-    <a href="exchanges.html">Exchange</a>
     <a href="profile.html">Profile</a>
     <a href="index.html" id="signOut">Sign out</a>
   </nav>
@@ -122,7 +121,7 @@
     </form>
 
     <div class="weights" id="weights">
-      <div class="legend-title">How much each factor matters</div>
+      <div class="legend-title">How much each factor matters (only factors you ask about count)</div>
       <div id="weightRows"></div>
       <div class="weights-actions">
         <span id="weightSum">Official weights: 100</span>
@@ -144,7 +143,7 @@
     </div>
     <p class="status" id="status"></p>
     <ol class="ledger" id="results" aria-label="Ranked resources"></ol>
-    <p class="note">The official score uses the fixed weights shown in the project documentation (30, 20, 20, 15, 15). "My priorities" re-ranks the same results with the weights you choose. It is a comparison view and is not saved as a match.</p>
+    <p class="note">The official score is the share of points for the factors you ask about, out of 100. Availability always counts. Add a category, quantity, urgency or area to get a score. "My priorities" re-ranks the same results with the weights you choose; it is a comparison and is not saved.</p>
   </section>
 </main>
 
@@ -206,19 +205,23 @@
 
   /* ---------- scoring ---------- */
   function customScore(item) {
-    const totalWeight = FACTORS.reduce((s, f) => s + state.priorities[f.key], 0);
-    if (!totalWeight) return 0;
-    const share = FACTORS.reduce((s, f) => {
-      const part = (item.breakdown || []).find(b => b.factor === f.key);
-      return s + (part ? part.points / part.max : 0) * state.priorities[f.key];
-    }, 0);
-    return (share / totalWeight) * 100;
+    // Only factors the recipient asked about count, weighted by the chosen priorities.
+    const bd = item.breakdown || [];
+    let share = 0, weight = 0;
+    FACTORS.forEach(f => {
+        const part = bd.find(b => b.factor === f.key);
+        if (!part || !part.applicable) return;
+        share += (part.points / part.max) * state.priorities[f.key];
+        weight += state.priorities[f.key];
+    });
+    return weight ? (share / weight) * 100 : null;
   }
   function scoreOf(item) { return state.view === "custom" ? customScore(item) : item.matchScore; }
+  const byScore = (a, b) => (scoreOf(b) ?? -1) - (scoreOf(a) ?? -1);
 
   /* ---------- rendering ---------- */
   function render() {
-    const list = state.items.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+    const list = state.items.slice().sort(byScore);
     const box = $("results");
     if (!list.length) {
       const asked = [$("q").value.trim(), $("category").value.trim()].filter(Boolean).map(v => "“" + esc(v) + "”").join(" in ");
@@ -235,6 +238,7 @@
       const frows = FACTORS.map(f => {
         const part = (item.breakdown || []).find(b => b.factor === f.key) || { points: 0, max: f.max };
         const pct = Math.round((part.points / f.max) * 100);
+        if (part.applicable === false) return `<div class="frow"><span>${f.label}</span><div class="track"></div><span class="num">not asked</span></div>`;
         return `<div class="frow"><span>${f.label}</span><div class="track"><span style="width:${pct}%;background:${f.color}"></span></div><span class="num">${part.points} / ${f.max}</span></div>`;
       }).join("");
       const reasons = (item.matchReasons || []).map(r => `<li>${esc(r)}</li>`).join("");
@@ -248,7 +252,7 @@
           <div class="legend">${FACTORS.map(f => `<span><span class="dot" style="background:${f.color};display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span>${f.label}</span>`).join("")}</div>
         </div>
         <div class="score">
-          <div class="pct">${Math.round(score)}<small>%</small></div>
+          <div class="pct">${score == null ? "—" : Math.round(score) + "<small>%</small>"}</div>
           <div class="basis">${state.view === "custom" ? "your priorities" : "official score"}</div>
           <div class="actions" style="justify-content:flex-end">
             <button type="button" class="btn" data-toggle="${esc(item.id)}" aria-expanded="${detailsOpen}">${detailsOpen ? "Hide" : "Why"}</button>
@@ -275,7 +279,7 @@
   });
 
   function requestItem(id) {
-    const ordered = state.items.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+    const ordered = state.items.slice().sort(byScore);
     const item = ordered.find(i => String(i.id) === String(id));
     if (!item) return;
     localStorage.setItem("selectedResource", JSON.stringify(item));

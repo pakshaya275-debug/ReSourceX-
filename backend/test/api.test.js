@@ -540,3 +540,39 @@ test("matching breakdown: five factors with documented maxima that add up to the
   assert.equal(m.breakdown.find(f => f.factor === "quantity").points, 10, "2 of 4 units gives half of 20 points");
   assert.equal(m.breakdown.find(f => f.factor === "category").points, 30);
 });
+
+// ---------------------------------------------------------------- correction round: scoring, ownership, password
+test("smart match: no stated need gives no score; a stated need is scored only on the factors asked about", async () => {
+  const donor = await signup("sc1", "DONOR"), rec = await signup("sc2", "RECIPIENT");
+  const tag = "Score" + run;
+  await addResource(donor.token, tag + "-books", 5, { category: "Books", location: "Chennai" });
+  const none = await call("GET", `/api/matching?search=${tag}`, rec.token);
+  const item = none.body.matches.find(m => m.name === tag + "-books");
+  assert.equal(item.matchScore, null, "no need stated: no score is shown");
+  assert.ok(item.matchReasons[0].includes("Add a category"), "the reason tells the user what to add");
+  assert.equal(item.breakdown.find(f => f.factor === "category").applicable, false);
+  // category asked: availability (15) and category (30) apply; a different category earns 0 of 30
+  const same = await call("GET", `/api/matching?search=${tag}&category=Books`, rec.token);
+  assert.equal(same.body.matches.find(m => m.name === tag + "-books").matchScore, 100, "same category, available now");
+  // quantity asked (40 units, 5 available): quantity earns 2.5 of 20; availability 15 of 15; score = 17.5 of 35
+  const qty = await call("GET", `/api/matching?search=${tag}&quantity=40`, rec.token);
+  assert.equal(qty.body.matches.find(m => m.name === tag + "-books").matchScore, 50, "only the asked factors count");
+});
+
+test("ownership: only donors list resources and propose exchanges", async () => {
+  const rec = await signup("own1", "RECIPIENT"), adm = await admin(), donor = await signup("own2", "DONOR");
+  const body = { name: "Attempt", category: "Books", quantity: 1 };
+  assert.equal((await call("POST", "/api/resources", rec.token, body)).status, 403, "recipient cannot list a resource");
+  assert.equal((await call("POST", "/api/resources", adm.token, body)).status, 403, "administrator does not own listings");
+  const mine = await addResource(donor.token, "Owned by donor", 2);
+  assert.equal((await call("POST", "/api/exchanges", rec.token, { recipientId: donor.id, offeredResourceId: mine, requestedResourceId: mine, offeredQuantity: 1, requestedQuantity: 1 })).status, 403, "recipient cannot propose an exchange");
+});
+
+test("settings: password change checks the current password and works for the next sign-in", async () => {
+  const u = await signup("pw1", "DONOR");
+  assert.equal((await call("PUT", "/api/auth/password", u.token, { currentPassword: "wrong-one", newPassword: "brandnew123" })).status, 400);
+  assert.equal((await call("PUT", "/api/auth/password", u.token, { currentPassword: "password123", newPassword: "short" })).status, 400);
+  assert.equal((await call("PUT", "/api/auth/password", u.token, { currentPassword: "password123", newPassword: "brandnew123" })).status, 200);
+  assert.equal((await call("POST", "/api/auth/login", null, { email: mail("pw1"), password: "password123" })).status, 401, "old password no longer works");
+  assert.equal((await call("POST", "/api/auth/login", null, { email: mail("pw1"), password: "brandnew123" })).status, 200, "new password works");
+});

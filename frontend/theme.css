@@ -100,3 +100,24 @@ label{color:var(--ink);font-weight:600}
 /* Brand colours: name in ink, the X in green, as in the target screens */
 .sidebar-logo .brand-name{color:var(--ink)!important}
 .sidebar-logo .brand-name span{color:#6ccf5c!important}
+
+/* Sidebar: bottom group (Settings, My Profile, Logout) sits at the foot of the sidebar */
+.sidebar{display:flex;flex-direction:column}
+.sidebar-bottom{margin-top:auto}
+/* Popup buttons (message window Close, Mark all as read) look like the Send button */
+.rx-head .rx-link{background:var(--orange);color:var(--ink);border:2px solid var(--ink);border-radius:10px;padding:6px 14px;font-weight:700;box-shadow:3px 3px 0 var(--ink);white-space:nowrap;font-size:14px;cursor:pointer}
+.rx-head .rx-link:hover{transform:translate(-1px,-1px)}
+/* Request confirmation header */
+.navbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 28px;border-bottom:2px solid var(--ink);background:var(--cream)}
+.nav-brand{font-weight:800;display:flex;align-items:center;gap:8px}
+.nav-brand .ico{width:1.2em;height:1.2em}
+.nav-title{font-weight:700;color:var(--muted)}
+/* Bottom sidebar group: no card background (the old stylesheet gave it one) */
+.sidebar-bottom{margin-top:auto;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+/* Settings cards */
+.page-header{margin-bottom:18px}
+.settings-card{padding:18px 22px;margin-bottom:18px}
+.settings-card h2{margin:0 0 10px;font-size:18px}
+.settings-card label{display:grid;gap:6px;margin-bottom:12px;max-width:460px;font-weight:600}
+.settings-card input,.settings-card select{width:100%}
+.settings-card .primary-btn,.settings-card .secondary-btn{margin-top:6px}

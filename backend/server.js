@@ -358,7 +358,7 @@ app.get("/api/resources/:id", requireAuth, asyncRoute(async (req, res) => {
   return res.json({ resource: resourceView(result.rows[0], req.user.id) });
 }));
 
-app.post("/api/resources", requireAuth, requireRole("DONOR", "RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
+app.post("/api/resources", requireAuth, requireRole("DONOR"), asyncRoute(async (req, res) => {
   const name = text(req.body.name);
   const category = text(req.body.category);
   const quantity = positiveInt(req.body.quantity);
@@ -663,9 +663,26 @@ function matchingScore(resource, criteria) {
   score += availabilityScore; factors.availability = availabilityScore;
   reasons.push(availabilityLabel(resourceDays));
 
-  // Per-factor breakdown, so the interface can show why a resource scored as it did and re-rank when priorities change.
-  const breakdown = MATCH_FACTORS.map(f => ({ factor: f.key, label: f.label, points: Math.round((factors[f.key] || 0) * 10) / 10, max: f.max }));
-  return { matchScore: Math.round(score), matchReasons: reasons, breakdown };
+  // A factor counts only when the recipient asked about it. The score is the share of the
+  // points available for the factors that were asked about, out of 100. Availability always applies.
+  const applicable = {
+    category: Boolean(criteria.category),
+    quantity: Boolean(requiredQuantity),
+    urgency: Boolean(requestedUrgency),
+    location: Boolean(hasDistance || criteria.location),
+    availability: true
+  };
+  const needsSomething = ["category", "quantity", "urgency", "location"].some(k => applicable[k]);
+  let earned = 0, possible = 0;
+  MATCH_FACTORS.forEach(f => { if (applicable[f.key]) { earned += factors[f.key] || 0; possible += f.max; } });
+  const matchScore = needsSomething && possible > 0 ? Math.round((earned / possible) * 100) : null;
+  if (!needsSomething) reasons.unshift("Add a category, quantity, urgency or area to get a match score");
+  // Per-factor breakdown: points only for the factors that were asked about.
+  const breakdown = MATCH_FACTORS.map(f => ({
+    factor: f.key, label: f.label, max: f.max, applicable: applicable[f.key],
+    points: applicable[f.key] ? Math.round((factors[f.key] || 0) * 10) / 10 : 0
+  }));
+  return { matchScore, matchReasons: reasons, breakdown };
 }
 app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
   const params = [req.user.id]; const conditions = ["r.status = 'AVAILABLE' AND r.donor_id <> $1"];
@@ -673,10 +690,26 @@ app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRo
   if (category) { params.push("%" + category + "%"); conditions.push("r.category ILIKE $" + params.length); }
   if (req.query.search) searchConditions(req.query.search, params, conditions, "r");
   const result = await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE " + conditions.join(" AND ") + " ORDER BY r.created_at DESC", params);
-  const matches = result.rows.map(item => Object.assign(resourceView(item, req.user.id), matchingScore(item, req.query))).sort((a, b) => b.matchScore - a.matchScore);
+  const availabilityOf = m => (m.breakdown.find(f => f.factor === "availability") || { points: 0 }).points;
+  const matches = result.rows.map(item => Object.assign(resourceView(item, req.user.id), matchingScore(item, req.query)))
+    .sort((a, b) => ((b.matchScore ?? -1) - (a.matchScore ?? -1)) || (availabilityOf(b) - availabilityOf(a)));
   return res.json({ matches, scoring: Object.fromEntries(MATCH_FACTORS.map(f => [f.key, f.max])) });
 }));
 
+
+// Change the signed-in user's password. The current password must be given.
+app.put("/api/auth/password", requireAuth, asyncRoute(async (req, res) => {
+  const current = String(req.body.currentPassword || "");
+  const next = String(req.body.newPassword || "");
+  if (next.length < 8) return res.status(400).json({ error: "The new password must be at least 8 characters" });
+  if (next.length > 200) return res.status(400).json({ error: "The new password is too long" });
+  const row = await pool.query("SELECT password_hash FROM users WHERE id = $1", [req.user.id]);
+  if (!row.rows[0] || !(await bcrypt.compare(current, row.rows[0].password_hash))) {
+    return res.status(400).json({ error: "The current password is incorrect" });
+  }
+  await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [await bcrypt.hash(next, 12), req.user.id]);
+  return res.json({ updated: true });
+}));
 
 // Recipients' views and requests of ranked recommendations. Stored for evaluation of future ranking changes.
 app.post("/api/matching/events", requireAuth, requireRole("RECIPIENT"), asyncRoute(async (req, res) => {
