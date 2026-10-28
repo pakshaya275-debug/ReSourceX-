@@ -42,8 +42,12 @@ label{color:var(--ink);font-weight:600}
 .sidebar-logo{color:var(--ink);font-weight:800}
 .sidebar-logo span{color:var(--coral)}
 .nav-item{color:var(--ink);border-radius:12px;font-weight:600}
-.nav-item:hover{background:#fff}
-.nav-item.active{background:var(--orange);border:2px solid var(--ink)}
+.nav-item:hover:not(.active){background:var(--tan)!important;color:var(--ink)!important}
+.nav-item:focus,.nav-item:focus-visible{background:var(--orange)!important;color:var(--ink)!important;outline:3px solid var(--coral);outline-offset:2px}
+.nav-item.active,.nav-item.active:hover,.nav-item.active:focus{background:var(--orange)!important;color:var(--ink)!important;border:2px solid var(--ink)}
+.nav-item:active{background:var(--orange)!important;color:var(--ink)!important}
+/* Prevent an empty/placeholder navigation link from appearing as a blank white tile. */
+.sidebar-nav > .nav-item:empty,.sidebar-bottom > .nav-item:empty{display:none!important}
 
 /* Status tags and alerts */
 .matching-status.loading{color:var(--sub)}
