@@ -17,7 +17,7 @@
             <p>Your contact details and address. Phone and exact address are shared only with people you have an approved request or exchange with.</p>
         </header>
 
-        <p id="profileStatus" class="matching-status" role="status"></p>
+        <p id="profileStatus" class="matching-status" role="status" hidden></p>
 
         <form id="profileForm" class="profile-form" novalidate>
             <fieldset>
@@ -88,7 +88,7 @@
     const token = localStorage.getItem("resourceXAuthToken");
     if (!token) { window.location.href = "index.html"; return; }
     const $ = id => document.getElementById(id);
-    const status = (text, kind) => { const el = $("profileStatus"); el.className = "matching-status " + (kind || ""); el.textContent = text; };
+    const status = (text, kind) => { const el = $("profileStatus"); el.className = "matching-status " + (kind || ""); el.textContent = text; el.hidden = !text; };
 
     async function api(path, options = {}) {
         const res = await fetch(API + path, {
