@@ -240,8 +240,8 @@
       days = Math.max(0, Math.ceil((dt.getTime() - Date.now()) / 86400000));
     }
     let calculated = null;
-    if (factor.key === "category" && criteria.category) calculated = resourceCategory.toLowerCase() === criteria.category.toLowerCase() ? 30 : 0;
-    if (factor.key === "location" && criteria.location) {
+    if (factor.key === "category" && criteria.category) { const wanted = criteria.category.toLowerCase(); const actual = resourceCategory.toLowerCase(); calculated = actual === wanted ? 30 : (actual.includes(wanted) || wanted.includes(actual)) ? 20 : 0; }
+    if (factor.key === "location" && criteria.location && resourceLocation) {
       const a = resourceLocation.toLowerCase(), b = criteria.location.toLowerCase();
       calculated = a === b ? 20 : (a.includes(b) || b.includes(a)) ? 12 : 5;
     }
