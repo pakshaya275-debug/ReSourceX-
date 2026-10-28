@@ -105,7 +105,22 @@
         if (!headerBell) document.body.appendChild(bell); document.body.appendChild(panel); if (headerBell) panel.classList.add("rx-panel-top");
         bell.addEventListener("click", function () { panel.classList.toggle("open"); if (panel.classList.contains("open")) refresh(); });
         panel.addEventListener("click", function (e) {
-            if (e.target.getAttribute("data-act") === "all") { api("/notifications/read-all", { method: "PUT" }).then(refresh).catch(function () {}); return; }
+            if (e.target.closest("[data-act=all]")) {
+                var allButton = e.target.closest("[data-act=all]");
+                allButton.disabled = true; allButton.textContent = "Updating…";
+                api("/notifications/read-all", { method: "PUT" })
+                    .then(function () {
+                        state.notifications = state.notifications.map(function (item) { item.isRead = true; return item; });
+                        state.unread = 0; renderList(); return refresh();
+                    })
+                    .catch(function () {
+                        var error = document.createElement("li"); error.className = "rx-error";
+                        error.textContent = "Could not mark notifications as read. Please try again.";
+                        list.prepend(error);
+                    })
+                    .then(function () { allButton.disabled = false; allButton.textContent = "Mark all as read"; });
+                return;
+            }
             var item = e.target.closest(".rx-item"); if (item) openNotification(item.getAttribute("data-id"));
         });
         panel.addEventListener("keydown", function (e) { if (e.key === "Enter") { var item = e.target.closest(".rx-item"); if (item) openNotification(item.getAttribute("data-id")); } });
