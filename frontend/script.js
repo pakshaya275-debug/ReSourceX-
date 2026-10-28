@@ -353,6 +353,7 @@ function closeResourceModal() {
 }
 
 // Close modal on backdrop click
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeResourceModal(); });
 document.getElementById("resourceModal")?.addEventListener("click", function (e) {
     if (e.target === this) {
         closeResourceModal();
@@ -659,6 +660,30 @@ function donorDeleteResource(resourceId) {
 /**
  * Renders activity log on donor dashboard
  */
+async function appendExchangeActivity(activityList) {
+    try {
+        const data = await apiRequest("/exchanges");
+        const names = list => (list || []).map(r => r.name || (r.resource && r.resource.name) || "a resource").join(", ");
+        const labels = {
+            PROPOSED: "proposed an exchange", COUNTERED: "sent a counter-offer", ACCEPTED: "accepted an exchange",
+            IN_PROGRESS: "exchange in progress", COMPLETED: "exchange completed", DECLINED: "declined an exchange", CANCELLED: "cancelled an exchange"
+        };
+        (data.exchanges || []).forEach(ex => {
+            const div = document.createElement("div");
+            div.className = "activity-item";
+            div.innerHTML = `
+                <span class="activity-icon">${RXIcon("exchange")}</span>
+                <div>
+                    <strong>Exchange #${escapeHtml(ex.id)} (${escapeHtml((ex.status || "").replace("_", " ").toLowerCase())})</strong>
+                    <p>${escapeHtml(labels[ex.status] || "exchange updated")}: ${escapeHtml(names(ex.offeredResources))} for ${escapeHtml(names(ex.requestedResources))}.</p>
+                </div>`;
+            activityList.appendChild(div);
+        });
+    } catch (error) {
+        /* exchange history is optional here; resource activity still shows */
+    }
+}
+
 function renderDonorActivity() {
     const activityList = document.getElementById("donorActivityList");
     if (!activityList) return;

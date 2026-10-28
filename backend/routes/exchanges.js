@@ -57,7 +57,7 @@ function initExchangesRouter({ pool, requireAuth, requireRole }) {
     return res.json({exchanges,count:count.rows[0].count,limit,offset});
   }));
   router.get("/:id",requireAuth,requireRole("DONOR","RECIPIENT","ADMIN"),participant,asyncRoute(async(req,res)=>res.json({exchange:await exchangeView(req.exchangeId)})));
-  router.post("/",requireAuth,requireRole("DONOR","RECIPIENT"),asyncRoute(async(req,res)=>{
+  router.post("/",requireAuth,requireRole("DONOR"),asyncRoute(async(req,res)=>{
     const recipient=idOf(req.body.recipient_id??req.body.recipientId),offeredId=idOf(req.body.offered_resource_id??req.body.offeredResourceId),requestedId=idOf(req.body.requested_resource_id??req.body.requestedResourceId),offeredQty=positiveInt(req.body.offered_quantity??req.body.offeredQuantity),requestedQty=positiveInt(req.body.requested_quantity??req.body.requestedQuantity),message=text(req.body.message);
     if(!recipient||!offeredId||!requestedId||!offeredQty||!requestedQty)return res.status(400).json({error:"Recipient, two different resource IDs, and positive quantities are required"});
     if(String(req.user.id)===String(recipient)||offeredId===requestedId)return res.status(400).json({error:"An exchange must involve another user and two different resources"});

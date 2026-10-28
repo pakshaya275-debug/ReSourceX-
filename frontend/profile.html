@@ -9,17 +9,7 @@
 </head>
 <body>
 <div class="dashboard">
-    <aside class="sidebar">
-        <div class="sidebar-logo"><span><span class="ico-slot" data-icon="refresh"></span></span> <span class="brand-name">ReSource<span>X</span></span></div>
-        <nav class="sidebar-nav">
-            <a href="recipient_dashboard.html" class="nav-item"><span class="ico-slot" data-icon="search"></span><span>Find Resources</span></a>
-            <a href="add_resource.html" class="nav-item"><span class="ico-slot" data-icon="plus"></span><span>Add Resource</span></a>
-            <a href="exchanges.html" class="nav-item"><span class="ico-slot" data-icon="exchange"></span><span>Resource Exchange</span></a>
-            <a href="profile.html" class="nav-item active"><span class="ico-slot" data-icon="user"></span><span>My Profile</span></a>
-            <a href="index.html" class="nav-item logout"
-               onclick="localStorage.removeItem('resourceXAuthToken');localStorage.removeItem('resourceXCurrentUser');"><span class="ico-slot" data-icon="logout"></span><span>Logout</span></a>
-        </nav>
-    </aside>
+    <aside class="sidebar" id="sidebarMount"></aside>
 
     <main class="main-content">
         <header class="page-header">
@@ -91,6 +81,7 @@
 
 <script src="config.js?v=20261026"></script>
     <script src="icons.js?v=20261026"></script>
+    <script src="sidebar.js?v=20261026"></script>
     <script>
 (() => {
     const API = window.RESOURCEX_API_URL;

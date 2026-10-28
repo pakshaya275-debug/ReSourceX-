@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | ReSourceX</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="theme.css?v=20261026">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar" id="sidebarMount"></aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h1>Settings</h1>
+            <p>Manage your sign-in and how your location is shared.</p>
+        </header>
+
+        <p id="settingsStatus" class="matching-status" role="status"></p>
+
+        <section class="dashboard-section settings-card">
+            <h2>Account</h2>
+            <p><strong>Email:</strong> <span id="accountEmail">Loading...</span></p>
+            <p><strong>Role:</strong> <span id="accountRole"></span></p>
+        </section>
+
+        <section class="dashboard-section settings-card">
+            <h2>Change password</h2>
+            <form id="passwordForm" novalidate>
+                <label>Current password <input id="currentPassword" type="password" autocomplete="current-password" required></label>
+                <label>New password (at least 8 characters) <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+                <label>Confirm new password <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+                <button type="submit" class="primary-btn" id="savePassword">Change password</button>
+            </form>
+        </section>
+
+        <section class="dashboard-section settings-card">
+            <h2>Location sharing</h2>
+            <p class="field-hint">Exact pickup location is shared with exchange partners only after acceptance, and only when you choose Exact.</p>
+            <label>Who can see my location
+                <select id="locationPrivacy">
+                    <option value="approximate">Approximate (about 1 km, shown to others)</option>
+                    <option value="exact">Exact (shared after an accepted request or exchange)</option>
+                    <option value="none">None (hidden from other users)</option>
+                </select>
+            </label>
+            <button type="button" class="secondary-btn" id="saveLocation">Save location setting</button>
+        </section>
+
+        <section class="dashboard-section settings-card">
+            <h2>Sign out</h2>
+            <button type="button" class="secondary-btn" id="signOutBtn">Sign out of this device</button>
+        </section>
+    </main>
+</div>
+
+<script src="config.js?v=20261026"></script>
+<script src="icons.js?v=20261026"></script>
+<script src="sidebar.js?v=20261026"></script>
+<script>
+(() => {
+    const API = window.RESOURCEX_API_URL;
+    const token = localStorage.getItem("resourceXAuthToken");
+    if (!token) { window.location.href = "index.html"; return; }
+    const $ = id => document.getElementById(id);
+    const say = (text, kind) => { const el = $("settingsStatus"); el.className = "matching-status " + (kind || ""); el.textContent = text; };
+    async function api(path, options = {}) {
+        const res = await fetch(API + path, {
+            method: options.method || "GET",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: options.body ? JSON.stringify(options.body) : undefined
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Request failed (" + res.status + ")");
+        return data;
+    }
+    $("signOutBtn").addEventListener("click", () => {
+        localStorage.removeItem("resourceXAuthToken"); localStorage.removeItem("resourceXCurrentUser");
+        window.location.href = "index.html";
+    });
+    $("passwordForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const next = $("newPassword").value, again = $("confirmPassword").value;
+        if (next.length < 8) return say("The new password must be at least 8 characters.", "error");
+        if (next !== again) return say("The new passwords do not match.", "error");
+        $("savePassword").disabled = true;
+        try {
+            await api("/auth/password", { method: "PUT", body: { currentPassword: $("currentPassword").value, newPassword: next } });
+            $("passwordForm").reset();
+            say("Password changed. Use the new password the next time you sign in.", "success");
+        } catch (error) { say(error.message, "error"); }
+        finally { $("savePassword").disabled = false; }
+    });
+    $("saveLocation").addEventListener("click", async () => {
+        try {
+            await api("/profile/location-privacy", { method: "PUT", body: { locationPrivacy: $("locationPrivacy").value } });
+            say("Location setting saved.", "success");
+        } catch (error) { say(error.message, "error"); }
+    });
+    api("/profile").then(data => {
+        $("accountEmail").textContent = data.profile.email;
+        $("accountRole").textContent = String(data.profile.role).toLowerCase();
+        $("locationPrivacy").value = data.profile.locationPrivacy || "approximate";
+    }).catch(error => say(error.message, "error"));
+})();
+</script>
+<script src="notifications.js?v=20261026"></script>
+</body>
+</html>

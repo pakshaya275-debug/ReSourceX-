@@ -12,6 +12,14 @@
 </head>
 
 <body>
+<script>
+  /* Only donors own and list resources; everyone else is sent to Smart Match. */
+  (function () {
+    try { var u = JSON.parse(localStorage.getItem("resourceXCurrentUser") || "null"); }
+    catch (e) { u = null; }
+    if (!u || String(u.role || "").toUpperCase() !== "DONOR") window.location.replace("discover.html");
+  })();
+</script>
 
 <div class="dashboard">
 
@@ -55,7 +63,7 @@
 
         <div class="sidebar-bottom">
 
-            <a href="#" class="nav-item">
+            <a href="settings.html" class="nav-item">
                 <span class="ico-slot" data-icon="settings"></span>
                 <span>Settings</span>
             </a>

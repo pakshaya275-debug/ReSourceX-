@@ -225,6 +225,13 @@
     const role=String(user.role||"").toUpperCase();
     if(!["DONOR","RECIPIENT"].includes(role)){window.location.href=role==="ADMIN"?"admin_dashboard.html":"index.html";return;}
     $("dashboardLink").href=role==="DONOR"?"donor_dashboard.html":"recipient_dashboard.html";
+    if(role!=="DONOR"){
+      const card=$("formHeading").closest("section,.card,.dashboard-section,.form-card")||$("formHeading").parentElement;
+      card.style.display="none";
+      const note=document.createElement("p"); note.className="matching-status";
+      note.textContent="Exchanges are between donors who own resources. To get a resource, use Smart Match and submit a request.";
+      card.parentElement.insertBefore(note,card);
+    }
     try{await loadPrivacy();}catch(e){console.error("Unable to load location privacy setting",e);}
     try{await loadResources();await loadExchanges();}
     catch(e){alertMessage(e.message);}
