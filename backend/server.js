@@ -686,8 +686,9 @@ function matchingScore(resource, criteria) {
 }
 app.get("/api/matching", requireAuth, requireRole("RECIPIENT", "ADMIN"), asyncRoute(async (req, res) => {
   const params = [req.user.id]; const conditions = ["r.status = 'AVAILABLE' AND r.donor_id <> $1"];
-  const category = likeSafe(req.query.category);
-  if (category) { params.push("%" + category + "%"); conditions.push("r.category ILIKE $" + params.length); }
+  // Category is a matching factor, not a hard filter: keep other available
+  // categories in the result set so the score can compare them and show 0/30
+  // when the recipient's selected category does not match.
   if (req.query.search) searchConditions(req.query.search, params, conditions, "r");
   const result = await pool.query("SELECT r.*, owner.location_privacy FROM resources r JOIN users owner ON owner.id = r.donor_id WHERE " + conditions.join(" AND ") + " ORDER BY r.created_at DESC", params);
   const availabilityOf = m => (m.breakdown.find(f => f.factor === "availability") || { points: 0 }).points;
