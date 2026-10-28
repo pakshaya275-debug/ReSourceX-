@@ -13,11 +13,15 @@
     window.renderSidebar = function (current) {
         var mount = document.getElementById("sidebarMount");
         if (!mount) return;
-        var top = isDonor()
-            ? [["donor_dashboard.html", "home", "Dashboard"], ["add_resource.html", "plus", "Add Resource"],
-               ["exchanges.html", "exchange", "Resource Exchange"], ["donor_dashboard.html#requests", "bell", "Requests"],
-               ["donor_dashboard.html#activity", "chart", "Activity"]]
-            : [["discover.html", "scale", "Smart Match"], ["recipient_dashboard.html#myRequestsSection", "clipboard", "My Requests"]];
+        var role = String((user() || {}).role || "").toUpperCase();
+        var top = role === "ADMIN"
+            ? [["admin_dashboard.html", "home", "Overview"], ["admin_dashboard.html#usersSection", "users", "User Management"], ["admin_dashboard.html#resourcesSection", "package", "All Resources"], ["admin_dashboard.html#requestsSection", "clipboard", "Requests"]]
+            : isDonor()
+                ? [["donor_dashboard.html", "home", "Dashboard"], ["add_resource.html", "plus", "Add Resource"],
+                   ["exchanges.html", "exchange", "Resource Exchange"], ["donor_dashboard.html#requestsSection", "bell", "Requests"],
+                   ["donor_dashboard.html#activitySection", "chart", "Activity"]]
+                : [["discover.html", "scale", "Smart Match"], ["recipient_dashboard.html#myRequestsSection", "clipboard", "My Requests"],
+                   ["exchanges.html", "exchange", "Resource Exchange"]];
         var bottom = [["settings.html", "settings", "Settings"], ["profile.html", "user", "My Profile"]];
         mount.innerHTML =
             '<div class="sidebar-logo"><span><span class="ico-slot" data-icon="refresh"></span></span>' +
