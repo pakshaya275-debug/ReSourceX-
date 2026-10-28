@@ -204,19 +204,52 @@
   $("viewCustom").addEventListener("click", () => { setView("custom"); render(); });
 
   /* ---------- scoring ---------- */
-  function customScore(item) {
-    // Only factors the recipient asked about count, weighted by the chosen priorities.
-    const bd = item.breakdown || [];
-    let share = 0, weight = 0;
-    FACTORS.forEach(f => {
-        const part = bd.find(b => b.factor === f.key);
-        if (!part || !part.applicable) return;
-        share += (part.points / part.max) * state.priorities[f.key];
-        weight += state.priorities[f.key];
-    });
-    return weight ? (share / weight) * 100 : null;
+  // Derive applicability from the current form so older API responses remain compatible.
+  function askedFactors() {
+    const hasCoords = Boolean(state.coords && state.coords.latitude != null && state.coords.longitude != null);
+    return {
+      category: Boolean($("category").value.trim()),
+      location: Boolean($("location").value.trim() || hasCoords),
+      quantity: Boolean($("qty").value.trim() && Number($("qty").value) > 0),
+      urgency: Boolean($("urgency").value),
+      availability: true
+    };
   }
-  function scoreOf(item) { return state.view === "custom" ? customScore(item) : item.matchScore; }
+  function factorPoints(item, factor) {
+    const part = (item.breakdown || []).find(b => b.factor === factor.key);
+    if (!part) return null;
+    const value = Number(part.points);
+    return Number.isFinite(value) ? Math.max(0, Math.min(factor.max, value)) : null;
+  }
+  function officialScore(item) {
+    const asked = askedFactors();
+    const relevant = FACTORS.filter(f => asked[f.key]);
+    if (!relevant.some(f => f.key !== "availability")) return null;
+    let earned = 0, possible = 0;
+    relevant.forEach(f => {
+      const points = factorPoints(item, f);
+      if (points === null) return;
+      earned += points; possible += f.max;
+    });
+    return possible ? Math.round((earned / possible) * 100) : null;
+  }
+  function customScore(item) {
+    const asked = askedFactors();
+    if (!Object.keys(asked).some(k => k !== "availability" && asked[k])) return null;
+    let earned = 0, possible = 0;
+    FACTORS.forEach(f => {
+      if (!asked[f.key]) return;
+      const priority = Math.max(0, Number(state.priorities[f.key]) || 0);
+      if (!priority) return;
+      const points = factorPoints(item, f);
+      if (points === null) return;
+      earned += (points / f.max) * priority; possible += priority;
+    });
+    // If all applicable sliders are zero, avoid a misleading 0%; use the official
+    // criteria score because no custom preference weight remains to rank by.
+    return possible ? Math.round((earned / possible) * 100) : officialScore(item);
+  }
+  function scoreOf(item) { return state.view === "custom" ? customScore(item) : officialScore(item); }
   const byScore = (a, b) => (scoreOf(b) ?? -1) - (scoreOf(a) ?? -1);
 
   /* ---------- rendering ---------- */
@@ -238,7 +271,7 @@
       const frows = FACTORS.map(f => {
         const part = (item.breakdown || []).find(b => b.factor === f.key) || { points: 0, max: f.max };
         const pct = Math.round((part.points / f.max) * 100);
-        if (part.applicable === false) return `<div class="frow"><span>${f.label}</span><div class="track"></div><span class="num">not asked</span></div>`;
+        if (!askedFactors()[f.key]) return `<div class="frow"><span>${f.label}</span><div class="track"></div><span class="num">not asked</span></div>`;
         return `<div class="frow"><span>${f.label}</span><div class="track"><span style="width:${pct}%;background:${f.color}"></span></div><span class="num">${part.points} / ${f.max}</span></div>`;
       }).join("");
       const reasons = (item.matchReasons || []).map(r => `<li>${esc(r)}</li>`).join("");
@@ -286,7 +319,7 @@
     const index = ordered.indexOf(item) + 1;
     fetch(API + "/matching/events", { method: "POST", keepalive: true,
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ resourceId: item.id, action: "request", rank: index, score: item.matchScore }) }).catch(() => {});
+      body: JSON.stringify({ resourceId: item.id, action: "request", rank: index, score: scoreOf(item) == null ? null : Math.round(scoreOf(item)) }) }).catch(() => {});
     window.location.href = "request_confirmation.html";
   }
 
