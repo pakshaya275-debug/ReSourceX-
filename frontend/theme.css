@@ -121,3 +121,56 @@ label{color:var(--ink);font-weight:600}
 .settings-card label{display:grid;gap:6px;margin-bottom:12px;max-width:460px;font-weight:600}
 .settings-card input,.settings-card select{width:100%}
 .settings-card .primary-btn,.settings-card .secondary-btn{margin-top:6px}
+
+/* Consistent layout and control states (review fixes, 2026-10-28) */
+*, *::before, *::after { box-sizing: border-box; }
+img, svg, video, canvas { max-width: 100%; }
+main, .main-content, .content, .page-content, .dashboard-content, .page-container,
+.form-card, .form-container, .resource-form, .exchange-content, .settings-card {
+  min-width: 0;
+}
+input, select, textarea, button { max-width: 100%; }
+input, select, textarea { min-width: 0; }
+button, .primary-btn, .secondary-btn, .auth-button, .view-details-btn,
+.request-btn, .action-btn, .btn-chat, .chip, [role="tab"] {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Keep selection states visibly selected instead of allowing generic hover/focus
+   rules to turn every active control white. */
+button[aria-pressed="true"], .chip[aria-pressed="true"],
+.tab.active, .auth-tab.active, [role="tab"][aria-selected="true"] {
+  background: var(--orange) !important;
+  color: var(--ink) !important;
+  border-color: var(--ink) !important;
+}
+.mode-toggle button.active, .match-mode button.active,
+.score-toggle button.active {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border-color: var(--ink) !important;
+}
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 3px solid var(--coral);
+  outline-offset: 3px;
+}
+/* Prevent grid/flex children and form controls from forcing cards wider than
+   their parent, especially on narrow screens. */
+.resource-card, .stat-card, .dashboard-section, .form-card, .card,
+.panel, .exchange-card, .modal-content, .summary-card, .request-card {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .auth-page { flex-direction: column; }
+  .brand-panel, .auth-panel { width: 100%; min-width: 0; }
+  .brand-panel { min-height: auto; padding: 28px 20px; }
+  .brand-content { max-width: 100%; }
+  .logo { margin-bottom: 28px; }
+  .sidebar { width: 100%; max-width: 100%; }
+  .main-content, .content, .page-content, .dashboard-content,
+  .exchange-content, main { width: 100%; max-width: 100%; padding-left: 16px; padding-right: 16px; }
+  .navbar { flex-wrap: wrap; padding: 12px 16px; }
+  .settings-card { padding: 16px; }
+}
+
