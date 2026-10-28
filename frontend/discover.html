@@ -190,7 +190,10 @@
     state.priorities[key] = Number(e.target.value);
     document.querySelector(`[data-out="${key}"]`).textContent = e.target.value;
     setView("custom");
-    renderWeights(); render();
+    const total = Object.values(state.priorities).reduce((a, b) => a + b, 0);
+    const isOfficial = FACTORS.every(f => state.priorities[f.key] === f.max);
+    $("weightSum").textContent = (isOfficial ? "Official weights" : "Custom weights") + ": total " + total;
+    render();
   });
   $("resetWeights").addEventListener("click", () => { state.priorities = { ...OFFICIAL }; renderWeights(); setView("official"); render(); });
 
@@ -216,7 +219,41 @@
     };
   }
   function factorPoints(item, factor) {
-    const part = (item.breakdown || []).find(b => b.factor === factor.key);
+    // Calculate from the live form and resource data. This keeps the UI responsive
+    // even if a deployed API returns a stale or incomplete breakdown.
+    const part = (item.breakdown || []).find(b => String(b.factor).toLowerCase() === factor.key);
+    const criteria = {
+      category: $("category").value.trim(),
+      location: $("location").value.trim(),
+      quantity: Number($("qty").value) > 0 ? Number($("qty").value) : null,
+      urgency: $("urgency").value
+    };
+    const resourceCategory = String(item.category || "").trim();
+    const resourceLocation = String(item.location || "").trim();
+    const resourceQty = Number(item.quantity) || 0;
+    const availabilityText = String(item.availability || "").trim().toLowerCase();
+    const daysMatch = availabilityText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    let days = null;
+    if (/available now|immediately|today/.test(availabilityText)) days = 0;
+    else if (daysMatch) {
+      const dt = new Date(Date.UTC(Number(daysMatch[1]), Number(daysMatch[2])-1, Number(daysMatch[3])));
+      days = Math.max(0, Math.ceil((dt.getTime() - Date.now()) / 86400000));
+    }
+    let calculated = null;
+    if (factor.key === "category" && criteria.category) calculated = resourceCategory.toLowerCase() === criteria.category.toLowerCase() ? 30 : 0;
+    if (factor.key === "location" && criteria.location) {
+      const a = resourceLocation.toLowerCase(), b = criteria.location.toLowerCase();
+      calculated = a === b ? 20 : (a.includes(b) || b.includes(a)) ? 12 : 5;
+    }
+    if (factor.key === "quantity" && criteria.quantity) calculated = Math.min(1, resourceQty / criteria.quantity) * 20;
+    if (factor.key === "urgency" && criteria.urgency) {
+      const u = ({LOW:1, MEDIUM:2, HIGH:3, CRITICAL:4})[criteria.urgency] || 1;
+      calculated = u >= 4 ? (days === 0 ? 15 : days !== null && days <= 2 ? 10 : 5)
+        : u === 3 ? (days === 0 ? 15 : days !== null && days <= 7 ? 12 : 8)
+        : (days === 0 ? 15 : days !== null && days <= 14 ? 14 : 12);
+    }
+    if (factor.key === "availability") calculated = days === 0 ? 15 : days !== null && days <= 2 ? 12 : days !== null && days <= 7 ? 9 : days !== null ? 5 : 3;
+    if (calculated !== null && Number.isFinite(calculated)) return Math.max(0, Math.min(factor.max, calculated));
     if (!part) return null;
     const value = Number(part.points);
     return Number.isFinite(value) ? Math.max(0, Math.min(factor.max, value)) : null;
@@ -264,15 +301,17 @@
     box.innerHTML = list.map((item, index) => {
       const score = scoreOf(item);
       const bars = FACTORS.map(f => {
-        const part = (item.breakdown || []).find(b => b.factor === f.key) || { points: 0 };
-        return `<span title="${f.label}: ${part.points} of ${f.max}" style="width:${Math.max(0, part.points)}%;background:${f.color}"></span>`;
+        const points = factorPoints(item, f);
+        const shown = points == null ? 0 : points;
+        return `<span title="${f.label}: ${shown} of ${f.max}" style="width:${Math.max(0, Math.min(100, shown / f.max * 100))}%;background:${f.color}"></span>`;
       }).join("");
       const detailsOpen = state.expanded.has(String(item.id));
       const frows = FACTORS.map(f => {
-        const part = (item.breakdown || []).find(b => b.factor === f.key) || { points: 0, max: f.max };
-        const pct = Math.round((part.points / f.max) * 100);
+        const points = factorPoints(item, f);
+        const shown = points == null ? 0 : points;
+        const pct = Math.round((shown / f.max) * 100);
         if (!askedFactors()[f.key]) return `<div class="frow"><span>${f.label}</span><div class="track"></div><span class="num">not asked</span></div>`;
-        return `<div class="frow"><span>${f.label}</span><div class="track"><span style="width:${pct}%;background:${f.color}"></span></div><span class="num">${part.points} / ${f.max}</span></div>`;
+        return `<div class="frow"><span>${f.label}</span><div class="track"><span style="width:${pct}%;background:${f.color}"></span></div><span class="num">${shown.toFixed(shown % 1 ? 1 : 0)} / ${f.max}</span></div>`;
       }).join("");
       const reasons = (item.matchReasons || []).map(r => `<li>${esc(r)}</li>`).join("");
       return `
